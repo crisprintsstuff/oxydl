@@ -40,7 +40,7 @@ pub fn render_settings_dialog(
     }
 
     let mut open = state.is_open;
-    Window::new("⚙ Oxidm Preferences & Settings")
+    Window::new("⚙ OxyDL Preferences & Settings")
         .open(&mut open)
         .resizable(false)
         .collapsible(false)

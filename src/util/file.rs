@@ -136,7 +136,7 @@ pub fn sanitize_filename(name: &str) -> String {
 
 /// Detect application data directory.
 /// In portable mode (portable.dat / portable folder next to exe), use `./data`.
-/// Otherwise use system standard config/data dir (`%APPDATA%/oxidm` on Windows).
+/// Otherwise use system standard config/data dir (`%APPDATA%/oxydl` on Windows).
 pub fn get_app_data_dir() -> PathBuf {
     if let Ok(exe_path) = std::env::current_exe() {
         if let Some(exe_dir) = exe_path.parent() {
@@ -149,7 +149,7 @@ pub fn get_app_data_dir() -> PathBuf {
         }
     }
 
-    if let Some(proj_dirs) = directories::ProjectDirs::from("org", "Oxidm", "Oxidm") {
+    if let Some(proj_dirs) = directories::ProjectDirs::from("org", "OxyDL", "OxyDL") {
         let config_dir = proj_dirs.data_dir().to_path_buf();
         let _ = std::fs::create_dir_all(&config_dir);
         return config_dir;

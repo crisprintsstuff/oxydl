@@ -1,4 +1,4 @@
-//! Local HTTP API server enabling browser extensions (Chrome, Firefox, Edge) to send downloads to Oxidm.
+//! Local HTTP API server enabling browser extensions (Chrome, Firefox, Edge) to send downloads to OxyDL.
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -42,7 +42,7 @@ impl ApiServer {
             let listener = match TcpListener::bind(addr).await {
                 Ok(l) => l,
                 Err(e) => {
-                    eprintln!("[Oxidm API] Could not bind to {}: {}", addr, e);
+                    eprintln!("[OxyDL API] Could not bind to {}: {}", addr, e);
                     return;
                 }
             };
@@ -93,7 +93,7 @@ impl ApiServer {
 
             let body = serde_json::json!({
                 "running": true,
-                "app": "Oxidm",
+                "app": "OxyDL",
                 "version": env!("CARGO_PKG_VERSION"),
                 "active_downloads": active_count,
                 "total_downloads": total_count,
@@ -128,7 +128,7 @@ impl ApiServer {
                         let resp = serde_json::json!({
                             "success": true,
                             "task_id": task_id.to_string(),
-                            "message": "Download added to Oxidm successfully",
+                            "message": "Download added to OxyDL successfully",
                         });
                         self.send_json_response(&mut stream, 200, &resp).await?;
                         return Ok(());

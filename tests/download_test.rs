@@ -1,7 +1,7 @@
-use oxidm::engine::state::{ChunkState, ChunkStatus, DownloadMeta};
-use oxidm::manager::queue::QueueManager;
-use oxidm::manager::task::TaskStatus;
-use oxidm::util::file::{extract_filename_from_url, sanitize_filename, TaskCategory};
+use oxydl::engine::state::{ChunkState, ChunkStatus, DownloadMeta};
+use oxydl::manager::queue::QueueManager;
+use oxydl::manager::task::TaskStatus;
+use oxydl::util::file::{extract_filename_from_url, sanitize_filename, TaskCategory};
 
 #[test]
 fn test_category_recognition() {
@@ -29,7 +29,7 @@ fn test_url_filename_sanitization() {
 
 #[test]
 fn test_download_metadata_roundtrip() {
-    let temp_dir = std::env::temp_dir().join(format!("oxidm_test_{}", uuid::Uuid::new_v4()));
+    let temp_dir = std::env::temp_dir().join(format!("oxydl_test_{}", uuid::Uuid::new_v4()));
     let _ = std::fs::create_dir_all(&temp_dir);
     let target_file = temp_dir.join("testfile.dat");
 

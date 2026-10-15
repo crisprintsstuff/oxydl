@@ -1,4 +1,4 @@
-# Oxidm (Oxidized Download Manager) 🦀🚀
+# OxyDL (Oxidized Download Manager) 🦀🚀
 
 > A lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Designed as a clean, bloat-free, portable alternative to Internet Download Manager (IDM).
 
@@ -6,13 +6,13 @@
 
 ## ⚡ Highlights & Features
 
-| Feature | Oxidm | Bloated Proprietary Managers |
+| Feature | OxyDL | Bloated Proprietary Managers |
 | :--- | :---: | :---: |
 | **Open Source & Free Forever** | ✅ Yes (MIT / Apache-2.0) | ❌ Paid / Adware / Trial Popups |
 | **Pure Rust Native App** | ✅ Single ~5.6 MB `.exe` | ❌ 150+ MB Electron / C++ Bloat |
 | **Multi-Part HTTP Range Streams** | ✅ 1 to 32 concurrent parts | ✅ |
 | **IDM-Style Segment Visualizer** | ✅ Real-time color-coded chunk bars | ✅ |
-| **Instant Pause & Resume** | ✅ Byte-level `.oxidm.meta` tracking | ✅ |
+| **Instant Pause & Resume** | ✅ Byte-level `.oxydl.meta` tracking | ✅ |
 | **Speed Limiter** | ✅ Configurable per-task / global throttling | ✅ |
 | **Browser Extension** | ✅ Chrome, Edge, Firefox, Brave (Zero-bloat) | ⚠️ Proprietary / Adware / Popups |
 | **Clipboard Link Sniffer** | ✅ Auto-detects copied `http`/`https` URLs | ✅ |
@@ -24,13 +24,13 @@
 ## 🚀 Key Architectural Capabilities
 
 ### 1. Dynamic Multi-Part Segmentation
-Just like IDM's core speed acceleration mechanism, Oxidm queries remote servers for `Accept-Ranges: bytes` and `Content-Length`. If supported, it partitions files into $N$ parallel segments (configurable: 1, 2, 4, 8, 16, 24, 32 connections) and downloads each slice concurrently through non-blocking asynchronous I/O (`tokio` + `reqwest` + `rustls`).
+Just like IDM's core speed acceleration mechanism, OxyDL queries remote servers for `Accept-Ranges: bytes` and `Content-Length`. If supported, it partitions files into $N$ parallel segments (configurable: 1, 2, 4, 8, 16, 24, 32 connections) and downloads each slice concurrently through non-blocking asynchronous I/O (`tokio` + `reqwest` + `rustls`).
 
 ### 2. Zero-Copy Sparse Pre-Allocation
 Files are pre-allocated with their target size upfront. Each worker connection streams byte buffers directly into its dedicated file offset using atomic file seeking (`SeekFrom::Start`). This avoids the heavy disk churn and slow post-download file merging found in traditional download managers.
 
 ### 3. Reliable Pause & Resume
-Every multi-part download generates a lightweight `.oxidm.meta` file recording the byte ranges, completed portions, and connection states. If a connection drops, your computer sleeps, or you pause a download, Oxidm seamlessly resumes right from the exact byte where it left off.
+Every multi-part download generates a lightweight `.oxydl.meta` file recording the byte ranges, completed portions, and connection states. If a connection drops, your computer sleeps, or you pause a download, OxyDL seamlessly resumes right from the exact byte where it left off (with automatic fallback to legacy `.oxidm.meta` if present).
 
 ### 4. Iconic Segment Progress Visualizer
 Inspired by IDM's legendary interface, selecting any download reveals the live segment canvas:
@@ -39,30 +39,30 @@ Inspired by IDM's legendary interface, selecting any download reveals the live s
 - Moving-average speed smoothing and accurate ETA calculation.
 
 ### 5. Automated Clipboard Monitoring
-Oxidm includes a background clipboard watcher that identifies copied download links (`http://` or `https://`) and renders a quick-action prompt banner to queue or download immediately.
+OxyDL includes a background clipboard watcher that identifies copied download links (`http://` or `https://`) and renders a quick-action prompt banner to queue or download immediately.
 
 ### 6. True Portable Mode vs. System Install
-- **Portable Mode**: Place `portable.txt` or a `data/` folder next to `oxidm.exe`. All task lists (`tasks.json`) and preferences (`settings.json`) are stored strictly inside `./data/`. Perfect for USB drives and zero-trace usage.
-- **System Mode**: If no portable marker is present, Oxidm stores settings and task databases in standard OS directories (`%APPDATA%/Oxidm` on Windows, `~/.config/Oxidm` on Linux).
+- **Portable Mode**: Place `portable.txt` or a `data/` folder next to `oxydl.exe`. All task lists (`tasks.json`) and preferences (`settings.json`) are stored strictly inside `./data/`. Perfect for USB drives and zero-trace usage.
+- **System Mode**: If no portable marker is present, OxyDL stores settings and task databases in standard OS directories (`%APPDATA%/OxyDL` on Windows, `~/.config/OxyDL` on Linux).
 
 ### 7. Chrome & Firefox Integration via Local REST API
-Oxidm features a local, asynchronous HTTP REST API listening on `http://127.0.0.1:19532`:
+OxyDL features a local, asynchronous HTTP REST API listening on `http://127.0.0.1:19532`:
 - **Zero Brittle Native Messaging**: Avoids complex registry manifests and Native Messaging host headaches.
 - **Universal Browser Support**: Works identically across Google Chrome, Mozilla Firefox, Microsoft Edge, Brave, Opera, and Vivaldi.
-- **Auto-Interception**: Automatically catches browser downloads and redirects them to Oxidm.
-- **Context Menus**: Right-click links, media, or web pages to send them instantly to Oxidm.
+- **Auto-Interception**: Automatically catches browser downloads and redirects them to OxyDL.
+- **Context Menus**: Right-click links, media, or web pages to send them instantly to OxyDL.
 
 ---
 
 ## 📂 Project Structure
 
 ```
-oxidm/
+oxydl/
 ├── Cargo.toml               # Project manifest & pure Rust dependencies
 ├── README.md                # Documentation & usage guide
 ├── assets/                  # Icons and visual assets
 ├── crates/
-│   └── installer/           # Pure Rust native Windows installer (install_oxidm.exe)
+│   └── installer/           # Pure Rust native Windows installer (install_oxydl.exe)
 ├── extension/               # Chrome & Firefox Manifest V3 Extension
 │   ├── manifest.json        # Universal MV3 browser manifest
 │   ├── background.js        # Download interceptor & context menus
@@ -79,7 +79,7 @@ oxidm/
     │   ├── client.rs        # HTTP client, user-agent, headers & URL probe
     │   ├── downloader.rs    # Concurrent chunk workers & stream writing
     │   ├── speed.rs         # Moving-average speed calculation & throttling
-    │   └── state.rs         # Chunk tracking & resume metadata (.oxidm.meta)
+    │   └── state.rs         # Chunk tracking & resume metadata (.oxydl.meta)
     ├── manager/             # Task queue & persistence
     │   ├── queue.rs         # Queue coordinator & concurrency scheduler
     │   ├── storage.rs       # tasks.json & settings.json persistence
@@ -115,7 +115,7 @@ cargo build --release
 cargo xwin build --target x86_64-pc-windows-msvc --release
 ```
 The compiled binary will be located at:
-`target/x86_64-pc-windows-msvc/release/oxidm.exe` (~5.6 MB standalone executable).
+`target/x86_64-pc-windows-msvc/release/oxydl.exe` (~5.6 MB standalone executable).
 
 ### 3. Generate Portable ZIP & Native Windows Installer
 Run the automated release packaging script:
@@ -123,22 +123,22 @@ Run the automated release packaging script:
 ./installer/build_release.sh
 ```
 This produces:
-- **`dist/install_oxidm.exe`**: Standalone native Windows installer wizard (extracts payload, generates Desktop & Start Menu `.lnk` shortcuts, registers in Windows Apps & Features, and provisions `uninstall.exe`).
-- **`dist/Oxidm-v0.1.0-Windows-x64-Portable.zip`**: Portable distribution with `portable.txt` enabled (stores data strictly in `./data`).
-- **`dist/portable/oxidm.exe`**: Direct standalone portable binary.
-- **`dist/oxidm-browser-extension.zip`**: Chrome & Firefox Manifest V3 browser integration package.
+- **`dist/install_oxydl.exe`**: Standalone native Windows installer wizard (extracts payload, generates Desktop & Start Menu `.lnk` shortcuts, registers in Windows Apps & Features, and provisions `uninstall.exe`).
+- **`dist/OxyDL-v0.1.0-Windows-x64-Portable.zip`**: Portable distribution with `portable.txt` enabled (stores data strictly in `./data`).
+- **`dist/portable/oxydl.exe`**: Direct standalone portable binary.
+- **`dist/oxydl-browser-extension.zip`**: Chrome & Firefox Manifest V3 browser integration package.
 
 ---
 
 ## 🌐 Browser Extension Setup (Chrome & Firefox)
 
-The Oxidm browser extension connects directly to your running desktop application via `http://127.0.0.1:19532`.
+The OxyDL browser extension connects directly to your running desktop application via `http://127.0.0.1:19532`.
 
 ### Google Chrome / Microsoft Edge / Brave
 1. Go to `chrome://extensions` (or `edge://extensions`).
 2. Toggle on **Developer mode** in the upper-right corner.
-3. Click **Load unpacked** and select the `extension/` directory (or extract `oxidm-browser-extension.zip`).
-4. Pin the Oxidm extension icon to your toolbar.
+3. Click **Load unpacked** and select the `extension/` directory (or extract `oxydl-browser-extension.zip`).
+4. Pin the OxyDL extension icon to your toolbar.
 
 ### Mozilla Firefox
 1. Navigate to `about:debugging#/runtime/this-firefox`.
@@ -149,22 +149,22 @@ The Oxidm browser extension connects directly to your running desktop applicatio
 
 ## 🪟 Windows Installation & Setup System
 
-### 1. GUI Installation Wizard (`install_oxidm.exe`)
-Double-click `install_oxidm.exe` on any Windows PC:
+### 1. GUI Installation Wizard (`install_oxydl.exe`)
+Double-click `install_oxydl.exe` on any Windows PC:
 - **Zero-Dependency**: 100% self-contained pure Rust installer (no admin elevation required).
-- **Customizable**: Choose custom install location (defaults to `%LOCALAPPDATA%\Programs\Oxidm`).
+- **Customizable**: Choose custom install location (defaults to `%LOCALAPPDATA%\Programs\OxyDL`).
 - **Shortcuts**: Automatically creates Start Menu and Desktop shortcuts.
 - **Windows Integration**: Registers in Windows "Installed apps" / "Add or Remove Programs" with icon, publisher, and version.
 
 ### 2. Silent / Automated Install (for Scripts & Winget)
 Run in PowerShell or Command Prompt:
 ```cmd
-install_oxidm.exe -y
+install_oxydl.exe -y
 ```
 
 ### 3. Clean Uninstallation
-To uninstall Oxidm:
-- From Windows Settings: Go to **Installed apps** -> **Oxidm** -> **Uninstall**.
+To uninstall OxyDL:
+- From Windows Settings: Go to **Installed apps** -> **OxyDL** -> **Uninstall**.
 - Or run `uninstall.exe` directly from the install directory.
 - Removes program files, Start Menu entries, Desktop shortcuts, and registry records.
 

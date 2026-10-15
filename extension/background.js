@@ -1,23 +1,23 @@
-// Oxidm Background Service Worker for Chrome & Firefox
-const OXIDM_API_URL = "http://127.0.0.1:19532";
+// OxyDL Background Service Worker for Chrome & Firefox
+const OXYDL_API_URL = "http://127.0.0.1:19532";
 
 // Initialize Context Menus upon installation
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
-    id: "oxidm-download-link",
-    title: "⚡ Download with Oxidm",
+    id: "oxydl-download-link",
+    title: "⚡ Download with OxyDL",
     contexts: ["link"],
   });
 
   chrome.contextMenus.create({
-    id: "oxidm-download-media",
-    title: "⚡ Download Media with Oxidm",
+    id: "oxydl-download-media",
+    title: "⚡ Download Media with OxyDL",
     contexts: ["image", "video", "audio"],
   });
 
   chrome.contextMenus.create({
-    id: "oxidm-download-page",
-    title: "⚡ Download Page with Oxidm",
+    id: "oxydl-download-page",
+    title: "⚡ Download Page with OxyDL",
     contexts: ["page"],
   });
 
@@ -42,7 +42,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     } catch (e) {}
   }
 
-  sendToOxidm(targetUrl, suggestedName, tab ? tab.url : null);
+  sendToOxyDL(targetUrl, suggestedName, tab ? tab.url : null);
 });
 
 // Automatic Browser Download Interceptor
@@ -64,12 +64,12 @@ chrome.downloads.onCreated.addListener((downloadItem) => {
     let filename = downloadItem.filename ? downloadItem.filename.split(/[/\\]/).pop() : null;
     let referrer = downloadItem.referrer || null;
 
-    sendToOxidm(url, filename, referrer, true);
+    sendToOxyDL(url, filename, referrer, true);
   });
 });
 
-// Communication with Oxidm Desktop Application via Local HTTP API
-async function sendToOxidm(url, filename, referrer, intercepted = false) {
+// Communication with OxyDL Desktop Application via Local HTTP API
+async function sendToOxyDL(url, filename, referrer, intercepted = false) {
   try {
     const payload = {
       url: url,
@@ -78,7 +78,7 @@ async function sendToOxidm(url, filename, referrer, intercepted = false) {
       num_connections: 8,
     };
 
-    const response = await fetch(`${OXIDM_API_URL}/add`, {
+    const response = await fetch(`${OXYDL_API_URL}/add`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -87,19 +87,19 @@ async function sendToOxidm(url, filename, referrer, intercepted = false) {
     if (response.ok) {
       const data = await response.json();
       showNotification(
-        "🚀 Oxidm: Download Added",
-        filename ? `Downloading: ${filename}` : `Transferring URL to Oxidm...`
+        "🚀 OxyDL: Download Added",
+        filename ? `Downloading: ${filename}` : `Transferring URL to OxyDL...`
       );
     } else {
       showNotification(
-        "⚠️ Oxidm Error",
-        "Oxidm rejected the download request. Check application logs."
+        "⚠️ OxyDL Error",
+        "OxyDL rejected the download request. Check application logs."
       );
     }
   } catch (error) {
     showNotification(
-      "⚠️ Oxidm Not Running",
-      "Could not connect to Oxidm on 127.0.0.1:19532. Please launch Oxidm on your computer."
+      "⚠️ OxyDL Not Running",
+      "Could not connect to OxyDL on 127.0.0.1:19532. Please launch OxyDL on your computer."
     );
   }
 }

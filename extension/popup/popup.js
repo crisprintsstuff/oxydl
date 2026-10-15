@@ -1,5 +1,5 @@
-// Oxidm Popup Script
-const OXIDM_API_URL = "http://127.0.0.1:19532";
+// OxyDL Popup Script
+const OXYDL_API_URL = "http://127.0.0.1:19532";
 
 document.addEventListener("DOMContentLoaded", () => {
   const statusBadge = document.getElementById("status-badge");
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Check desktop app connection
   async function checkAppStatus() {
     try {
-      const response = await fetch(`${OXIDM_API_URL}/status`, {
+      const response = await fetch(`${OXYDL_API_URL}/status`, {
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",
@@ -76,17 +76,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 4000);
   }
 
-  // Send download URL to Oxidm
+  // Send download URL to OxyDL
   async function sendDownload(url) {
     if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
       showFeedback("Please enter a valid HTTP or HTTPS URL", "error");
       return;
     }
 
-    showFeedback("Sending to Oxidm...", "success");
+    showFeedback("Sending to OxyDL...", "success");
 
     try {
-      const response = await fetch(`${OXIDM_API_URL}/add`, {
+      const response = await fetch(`${OXYDL_API_URL}/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -98,15 +98,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (response.ok) {
         const resData = await response.json();
-        showFeedback(resData.message || "Download added to Oxidm!", "success");
+        showFeedback(resData.message || "Download added to OxyDL!", "success");
         urlInput.value = "";
         checkAppStatus();
       } else {
         const errData = await response.json().catch(() => ({}));
-        showFeedback(errData.error || "Oxidm rejected the request", "error");
+        showFeedback(errData.error || "OxyDL rejected the request", "error");
       }
     } catch (err) {
-      showFeedback("Could not connect to Oxidm. Make sure app is running.", "error");
+      showFeedback("Could not connect to OxyDL. Make sure app is running.", "error");
     }
   }
 

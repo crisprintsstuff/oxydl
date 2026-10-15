@@ -4,11 +4,11 @@ members = [
 ]
 
 [package]
-name = "oxidm"
+name = "oxydl"
 version = "0.1.0"
 edition = "2021"
 description = "Open source, high-speed multi-part download manager written in pure Rust"
-authors = ["Oxidm Contributors"]
+authors = ["OxyDL Contributors"]
 
 [dependencies]
 # GUI

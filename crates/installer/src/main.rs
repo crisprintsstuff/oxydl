@@ -1,4 +1,4 @@
-//! Native Windows Installer and Setup Wizard for Oxidm.
+//! Native Windows Installer and Setup Wizard for OxyDL.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use eframe::egui::{self, Color32, ProgressBar, RichText};
 use flate2::read::GzDecoder;
 
-// Embedded compressed oxidm.exe binary payload
-const OXIDM_PAYLOAD: &[u8] = include_bytes!("../payload/oxidm.exe.gz");
+// Embedded compressed oxydl.exe binary payload
+const OXYDL_PAYLOAD: &[u8] = include_bytes!("../payload/oxydl.exe.gz");
 const APP_VERSION: &str = "0.1.0";
-const APP_NAME: &str = "Oxidm";
+const APP_NAME: &str = "OxyDL";
 
 #[derive(Debug, PartialEq, Eq)]
 enum WizardStep {
@@ -63,16 +63,16 @@ impl InstallerApp {
     fn perform_installation(&mut self) -> Result<(), String> {
         let target_dir = self.install_dir.clone();
         fs::create_dir_all(&target_dir)
-            .map_err(|e| format!("Failed to create installation directory: {}", e))?;
+            .map_err(|e| format!("Failed to create directory {}: {}", target_dir.display(), e))?;
 
-        // 1. Decompress and extract oxidm.exe
-        self.status_message = "Extracting oxidm.exe...".to_string();
+        // 1. Decompress and extract oxydl.exe
+        self.status_message = "Extracting oxydl.exe...".to_string();
         self.progress_frac = 0.3;
 
-        let target_exe = target_dir.join("oxidm.exe");
-        let mut decoder = GzDecoder::new(OXIDM_PAYLOAD);
+        let target_exe = target_dir.join("oxydl.exe");
+        let mut decoder = GzDecoder::new(OXYDL_PAYLOAD);
         let mut out_file = File::create(&target_exe)
-            .map_err(|e| format!("Failed to write oxidm.exe: {}", e))?;
+            .map_err(|e| format!("Failed to write oxydl.exe: {}", e))?;
         io::copy(&mut decoder, &mut out_file)
             .map_err(|e| format!("Failed to decompress payload: {}", e))?;
 
@@ -92,7 +92,7 @@ impl InstallerApp {
 
             if let Some(start_menu) = get_start_menu_programs_dir() {
                 let _ = fs::create_dir_all(&start_menu);
-                let lnk_path = start_menu.join("Oxidm.lnk");
+                let lnk_path = start_menu.join("OxyDL.lnk");
                 create_shortcut(&target_exe, &lnk_path, &target_dir);
             }
         }
@@ -103,7 +103,7 @@ impl InstallerApp {
             self.progress_frac = 0.85;
 
             if let Some(desktop) = get_desktop_dir() {
-                let lnk_path = desktop.join("Oxidm.lnk");
+                let lnk_path = desktop.join("OxyDL.lnk");
                 create_shortcut(&target_exe, &lnk_path, &target_dir);
             }
         }
@@ -129,13 +129,13 @@ impl InstallerApp {
 
         // Remove Start Menu shortcut
         if let Some(start_menu) = get_start_menu_programs_dir() {
-            let lnk_path = start_menu.join("Oxidm.lnk");
+            let lnk_path = start_menu.join("OxyDL.lnk");
             let _ = fs::remove_file(lnk_path);
         }
 
         // Remove Desktop shortcut
         if let Some(desktop) = get_desktop_dir() {
-            let lnk_path = desktop.join("Oxidm.lnk");
+            let lnk_path = desktop.join("OxyDL.lnk");
             let _ = fs::remove_file(lnk_path);
         }
 
@@ -147,10 +147,10 @@ impl InstallerApp {
         // Remove files
         self.status_message = "Removing program files...".to_string();
         self.progress_frac = 0.9;
-        let _ = fs::remove_file(install_dir.join("oxidm.exe"));
+        let _ = fs::remove_file(install_dir.join("oxydl.exe"));
 
         self.progress_frac = 1.0;
-        self.status_message = "Oxidm has been uninstalled.".to_string();
+        self.status_message = "OxyDL has been uninstalled.".to_string();
         Ok(())
     }
 }
@@ -158,9 +158,9 @@ impl InstallerApp {
 impl eframe::App for InstallerApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let title = if self.is_uninstall_mode {
-            "Oxidm Uninstaller"
+            "OxyDL Uninstaller"
         } else {
-            "Oxidm Setup Wizard"
+            "OxyDL Setup Wizard"
         };
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -186,17 +186,17 @@ impl eframe::App for InstallerApp {
                 match self.step {
                     WizardStep::Welcome => {
                         ui.label(
-                            RichText::new("Welcome to the Oxidm Setup Wizard")
+                            RichText::new("Welcome to the OxyDL Setup Wizard")
                                 .size(16.0)
                                 .strong(),
                         );
                         ui.add_space(8.0);
                         ui.label(
-                            "This wizard will install Oxidm - High Speed Download Manager on your computer."
+                            "This wizard will install OxyDL - High Speed Download Manager on your computer."
                         );
                         ui.add_space(6.0);
                         ui.label(
-                            "Oxidm is a bloat-free, pure Rust alternative to Internet Download Manager (IDM), featuring multi-connection acceleration, IDM-style segment stream visualization, and automated clipboard link detection."
+                            "OxyDL is a bloat-free, pure Rust alternative to Internet Download Manager (IDM), featuring multi-connection acceleration, IDM-style segment stream visualization, and automated clipboard link detection."
                         );
                         ui.add_space(16.0);
                         ui.label(
@@ -251,7 +251,7 @@ impl eframe::App for InstallerApp {
                         );
                         ui.checkbox(
                             &mut self.launch_after_install,
-                            "Launch Oxidm after installation finishes",
+                            "Launch OxyDL after installation finishes",
                         );
 
                         ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
@@ -277,7 +277,7 @@ impl eframe::App for InstallerApp {
                     }
 
                     WizardStep::Installing => {
-                        ui.label(RichText::new("Installing Oxidm...").size(15.0).strong());
+                        ui.label(RichText::new("Installing OxyDL...").size(15.0).strong());
                         ui.add_space(12.0);
 
                         ui.add(ProgressBar::new(self.progress_frac).show_percentage());
@@ -305,11 +305,11 @@ impl eframe::App for InstallerApp {
                         );
                         ui.add_space(8.0);
                         ui.label(format!(
-                            "Oxidm has been installed to:\n{}",
+                            "OxyDL has been installed to:\n{}",
                             self.install_dir.display()
                         ));
                         ui.add_space(12.0);
-                        ui.checkbox(&mut self.launch_after_install, "Launch Oxidm now");
+                        ui.checkbox(&mut self.launch_after_install, "Launch OxyDL now");
 
                         ui.with_layout(egui::Layout::bottom_up(egui::Align::RIGHT), |ui| {
                             let finish_btn = egui::Button::new(
@@ -321,7 +321,7 @@ impl eframe::App for InstallerApp {
 
                             if ui.add(finish_btn).clicked() {
                                 if self.launch_after_install {
-                                    let exe = self.install_dir.join("oxidm.exe");
+                                    let exe = self.install_dir.join("oxydl.exe");
                                     let _ = open::that(&exe);
                                 }
                                 std::process::exit(0);
@@ -331,14 +331,14 @@ impl eframe::App for InstallerApp {
 
                     WizardStep::UninstallConfirm => {
                         ui.label(
-                            RichText::new("Uninstall Oxidm")
+                            RichText::new("Uninstall OxyDL")
                                 .size(16.0)
                                 .color(Color32::from_rgb(231, 76, 60))
                                 .strong(),
                         );
                         ui.add_space(8.0);
                         ui.label(
-                            "Are you sure you want to completely remove Oxidm from your computer?"
+                            "Are you sure you want to completely remove OxyDL from your computer?"
                         );
                         ui.add_space(8.0);
                         ui.label(format!("Location: {}", self.install_dir.display()));
@@ -363,7 +363,7 @@ impl eframe::App for InstallerApp {
                     }
 
                     WizardStep::Uninstalling => {
-                        ui.label(RichText::new("Uninstalling Oxidm...").strong());
+                        ui.label(RichText::new("Uninstalling OxyDL...").strong());
                         ui.add_space(8.0);
                         ui.add(ProgressBar::new(self.progress_frac));
                         ui.label(&self.status_message);
@@ -377,7 +377,7 @@ impl eframe::App for InstallerApp {
 
                     WizardStep::Uninstalled => {
                         ui.label(
-                            RichText::new("Oxidm was successfully removed from your computer.")
+                            RichText::new("OxyDL was successfully removed from your computer.")
                                 .color(Color32::from_rgb(46, 204, 113))
                                 .strong(),
                         );
@@ -394,8 +394,8 @@ impl eframe::App for InstallerApp {
 }
 
 /// Determine default installation directory.
-/// On Windows: %LOCALAPPDATA%\Programs\Oxidm
-/// On other OS: ~/.local/share/oxidm
+/// On Windows: %LOCALAPPDATA%\Programs\OxyDL
+/// On other OS: ~/.local/share/oxydl
 fn get_default_install_dir() -> PathBuf {
     #[cfg(windows)]
     {
@@ -452,7 +452,7 @@ fn create_shortcut(target_exe: &Path, lnk_path: &Path, working_dir: &Path) {
     }
 }
 
-/// Register uninstall info in Windows Registry (HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\Oxidm).
+/// Register uninstall info in Windows Registry (HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\OxyDL).
 #[cfg(windows)]
 fn register_windows_uninstall(install_dir: &Path, target_exe: &Path, uninstaller: &Path) {
     use winreg::enums::*;
@@ -464,7 +464,7 @@ fn register_windows_uninstall(install_dir: &Path, target_exe: &Path, uninstaller
     if let Ok((key, _)) = hkcu.create_subkey(&subkey_path) {
         let _ = key.set_value("DisplayName", &format!("{} - High Speed Download Manager", APP_NAME));
         let _ = key.set_value("DisplayVersion", &APP_VERSION);
-        let _ = key.set_value("Publisher", &"Oxidm Open Source Project");
+        let _ = key.set_value("Publisher", &"OxyDL Open Source Project");
         let _ = key.set_value("InstallLocation", &install_dir.to_string_lossy().to_string());
         let _ = key.set_value("UninstallString", &format!("\"{}\"", uninstaller.to_string_lossy()));
         let _ = key.set_value("DisplayIcon", &format!("\"{}\",0", target_exe.to_string_lossy()));
@@ -516,14 +516,14 @@ fn main() -> eframe::Result<()> {
     // Interactive GUI Setup Wizard
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title(if is_uninstall { "Oxidm Uninstaller" } else { "Oxidm Setup Wizard" })
+            .with_title(if is_uninstall { "OxyDL Uninstaller" } else { "OxyDL Setup Wizard" })
             .with_inner_size([560.0, 420.0])
             .with_resizable(false),
         ..Default::default()
     };
 
     eframe::run_native(
-        "Oxidm Installer",
+        "OxyDL Installer",
         native_options,
         Box::new(move |cc| {
             cc.egui_ctx.set_visuals(egui::Visuals::dark());

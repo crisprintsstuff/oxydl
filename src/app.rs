@@ -15,7 +15,7 @@ use crate::ui::toolbar::{render_toolbar, ToolbarAction};
 use crate::util::clipboard::ClipboardMonitor;
 use crate::util::format::format_speed;
 
-pub struct OxidmApp {
+pub struct OxyDLApp {
     queue: QueueManager,
     clipboard_monitor: ClipboardMonitor,
     selected_task_id: Option<Uuid>,
@@ -27,7 +27,7 @@ pub struct OxidmApp {
     current_speed_limit_kbps: Option<u64>,
 }
 
-impl OxidmApp {
+impl OxyDLApp {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         let queue = QueueManager::new();
         let settings = {
@@ -66,7 +66,7 @@ impl OxidmApp {
     }
 }
 
-impl eframe::App for OxidmApp {
+impl eframe::App for OxyDLApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // Try pulling latest snapshot of tasks without blocking GUI thread
         if let Ok(tasks_guard) = self.queue.tasks.try_lock() {
@@ -234,7 +234,7 @@ impl eframe::App for OxidmApp {
                                 .filter(|t| t.status == TaskStatus::Downloading)
                                 .count();
 
-                            ui.label(RichText::new("Oxidm Status:").strong());
+                            ui.label(RichText::new("OxyDL Status:").strong());
                             ui.label(format!("Active Downloads: {}", active_count));
                             ui.separator();
                             ui.label(format!("Total Speed: {}", format_speed(total_speed)));

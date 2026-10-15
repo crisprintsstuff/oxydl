@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Oxidm Integration Module",
+  "name": "OxyDL Integration Module",
   "version": "1.0.0",
-  "description": "Turbocharge browser downloads with Oxidm - Open Source, High Speed Multi-Connection Download Manager.",
+  "description": "Turbocharge browser downloads with OxyDL - Open Source, High Speed Multi-Connection Download Manager.",
   "permissions": [
     "contextMenus",
     "downloads",
@@ -19,7 +19,7 @@
     "scripts": ["background.js"]
   },
   "action": {
-    "default_title": "Oxidm Download Manager",
+    "default_title": "OxyDL Download Manager",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -34,7 +34,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "oxidm-integration@oxidm.org",
+      "id": "oxydl-integration@oxydl.org",
       "strict_min_version": "109.0"
     }
   }

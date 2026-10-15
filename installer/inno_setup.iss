@@ -1,11 +1,11 @@
-; Inno Setup Script for Oxidm - High Speed Download Manager
+; Inno Setup Script for OxyDL - High Speed Download Manager
 ; Can be compiled with Inno Setup Compiler (ISCC.exe)
 
-#define MyAppName "Oxidm"
+#define MyAppName "OxyDL"
 #define MyAppVersion "0.1.0"
-#define MyAppPublisher "Oxidm Open Source Project"
-#define MyAppURL "https://github.com/oxidm/oxidm"
-#define MyAppExeName "oxidm.exe"
+#define MyAppPublisher "OxyDL Open Source Project"
+#define MyAppURL "https://github.com/crisprintsstuff/oxydl"
+#define MyAppExeName "oxydl.exe"
 
 [Setup]
 AppId={{E68A86C1-2895-4FE8-9442-990A61C8B4C0}
@@ -19,7 +19,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=..\dist\installer
-OutputBaseFilename=Oxidm-Setup-v{#MyAppVersion}
+OutputBaseFilename=OxyDL-Setup-v{#MyAppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern

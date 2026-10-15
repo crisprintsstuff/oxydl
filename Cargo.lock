@@ -1431,7 +1431,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "install_oxidm"
+name = "install_oxydl"
 version = "0.1.0"
 dependencies = [
  "directories",
@@ -2100,7 +2100,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "oxidm"
+name = "oxydl"
 version = "0.1.0"
 dependencies = [
  "arboard",

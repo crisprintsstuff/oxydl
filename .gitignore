@@ -5,6 +5,7 @@
 # Runtime & Local data
 data/
 *.oxidm.meta
+*.oxydl.meta
 tasks.json
 settings.json
 *.log

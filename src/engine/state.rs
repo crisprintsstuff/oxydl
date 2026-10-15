@@ -70,6 +70,12 @@ pub struct DownloadMeta {
 impl DownloadMeta {
     pub fn meta_path_for(target_file: &Path) -> std::path::PathBuf {
         let mut p = target_file.as_os_str().to_os_string();
+        p.push(".oxydl.meta");
+        std::path::PathBuf::from(p)
+    }
+
+    pub fn legacy_meta_path_for(target_file: &Path) -> std::path::PathBuf {
+        let mut p = target_file.as_os_str().to_os_string();
         p.push(".oxidm.meta");
         std::path::PathBuf::from(p)
     }
@@ -84,15 +90,22 @@ impl DownloadMeta {
 
     pub fn load_from_disk(target_file: &Path) -> Option<Self> {
         let meta_file = Self::meta_path_for(target_file);
-        if !meta_file.exists() {
-            return None;
-        }
-        let data = std::fs::read(&meta_file).ok()?;
+        let meta_path = if meta_file.exists() {
+            meta_file
+        } else {
+            let legacy = Self::legacy_meta_path_for(target_file);
+            if legacy.exists() {
+                legacy
+            } else {
+                return None;
+            }
+        };
+        let data = std::fs::read(&meta_path).ok()?;
         serde_json::from_slice(&data).ok()
     }
 
     pub fn remove_from_disk(target_file: &Path) {
-        let meta_file = Self::meta_path_for(target_file);
-        let _ = std::fs::remove_file(meta_file);
+        let _ = std::fs::remove_file(Self::meta_path_for(target_file));
+        let _ = std::fs::remove_file(Self::legacy_meta_path_for(target_file));
     }
 }

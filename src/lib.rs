@@ -1,4 +1,4 @@
-//! Oxidm library providing download engine, state management, UI, and utilities.
+//! OxyDL library providing download engine, state management, UI, and utilities.
 
 pub mod api;
 pub mod app;
