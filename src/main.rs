@@ -30,10 +30,18 @@ fn main() -> eframe::Result<()> {
 
     let _guard = rt.enter();
 
+    // Window icon
+    let icon_data = egui::IconData {
+        rgba: include_bytes!("../assets/icon_32.rgba").to_vec(),
+        width: 32,
+        height: 32,
+    };
+
     // Configure native window options
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("OxyDL - High Speed Download Manager")
+            .with_icon(std::sync::Arc::new(icon_data))
             .with_inner_size([1020.0, 680.0])
             .with_min_inner_size([760.0, 480.0])
             .with_active(true),

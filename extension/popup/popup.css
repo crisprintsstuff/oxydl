@@ -48,7 +48,10 @@ body {
 }
 
 .logo-area .icon {
-  font-size: 24px;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  object-fit: cover;
 }
 
 .title {

@@ -513,10 +513,18 @@ fn main() -> eframe::Result<()> {
         return Ok(());
     }
 
+    // Window icon
+    let icon_data = egui::IconData {
+        rgba: include_bytes!("../../../assets/icon_32.rgba").to_vec(),
+        width: 32,
+        height: 32,
+    };
+
     // Interactive GUI Setup Wizard
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title(if is_uninstall { "OxyDL Uninstaller" } else { "OxyDL Setup Wizard" })
+            .with_icon(std::sync::Arc::new(icon_data))
             .with_inner_size([560.0, 420.0])
             .with_resizable(false),
         ..Default::default()
