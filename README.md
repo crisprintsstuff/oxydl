@@ -2,7 +2,15 @@
   <img src="assets/banner.png" alt="OxyDL - High Speed Download Manager" width="100%" />
 </p>
 
-> A lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Designed as a clean, bloat-free, portable alternative to Internet Download Manager (IDM).
+<p align="center">
+  <a href="https://github.com/crisprintsstuff/oxydl/releases"><img src="https://img.shields.io/badge/release-v0.1.0-blue?style=flat-square&logo=github" alt="Release" /></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/language-Rust%201.80%2B-orange?style=flat-square&logo=rust" alt="Rust" /></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey?style=flat-square&logo=windows" alt="Platform" />
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%2FApache--2.0-green?style=flat-square" alt="License" /></a>
+  <a href="extension/"><img src="https://img.shields.io/badge/extension-Chrome%20%7C%20Firefox-informational?style=flat-square&logo=googlechrome" alt="Browser Extension" /></a>
+</p>
+
+> **OxyDL** is a lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Engineered as a clean, bloat-free alternative to **Internet Download Manager (IDM)**, **Free Download Manager (FDM)**, **JDownloader**, and **XDM**. Features dynamic multi-segment HTTP Range acceleration, real-time segment stream visualization, zero disk churn sparse pre-allocation, portable mode, native Windows installer wizard, and universal Chrome/Firefox browser extension.
 
 ---
 
