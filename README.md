@@ -2,6 +2,9 @@
   <img src="assets/banner.png" alt="OxyDL - High Speed Download Manager" width="100%" />
 </p>
 
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-view%20releases-
+ ┃   blueviolet?style=flat-square&logo=git" alt="Changelog" /></a>
+
 <p align="center">
   <a href="https://github.com/crisprintsstuff/oxydl/releases"><img src="https://img.shields.io/badge/release-v0.1.0-blue?style=flat-square&logo=github" alt="Release" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/language-Rust%201.80%2B-orange?style=flat-square&logo=rust" alt="Rust" /></a>
