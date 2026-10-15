@@ -170,6 +170,11 @@ impl QueueManager {
         self.schedule_next();
     }
 
+    /// Resume a specific paused or queued task.
+    pub async fn resume_task(&self, task_id: Uuid) {
+        self.start_task(task_id).await;
+    }
+
     /// Resume all paused tasks.
     pub async fn resume_all(&self) {
         let task_ids: Vec<Uuid> = {

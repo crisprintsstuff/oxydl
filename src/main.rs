@@ -13,7 +13,22 @@ fn main() -> eframe::Result<()> {
         println!("Usage:");
         println!("  oxydl                 Launch the graphical user interface");
         println!("  oxydl <url>           Launch GUI and automatically queue <url>");
+        println!("  oxydl --mcp           Run as Model Context Protocol (MCP) server over stdio");
         println!("  oxydl --version       Display version information");
+        return Ok(());
+    }
+
+    if args.iter().any(|a| a == "--mcp") {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("Failed to initialize Tokio runtime");
+
+        rt.block_on(async {
+            let queue = oxydl::manager::queue::QueueManager::new();
+            let mcp_server = std::sync::Arc::new(oxydl::mcp::McpServer::new(queue));
+            let _ = mcp_server.run_stdio().await;
+        });
         return Ok(());
     }
 

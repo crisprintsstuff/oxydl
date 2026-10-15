@@ -94,3 +94,53 @@ impl SpeedTracker {
         self.last_speed = 0.0;
     }
 }
+
+/// Lightweight speed calculator recording incremental chunks.
+#[derive(Debug, Clone)]
+pub struct SpeedLimiter {
+    samples: VecDeque<(Instant, usize)>,
+    window_duration: Duration,
+    last_speed: f64,
+}
+
+impl SpeedLimiter {
+    pub fn new() -> Self {
+        Self {
+            samples: VecDeque::new(),
+            window_duration: Duration::from_secs_f32(1.5),
+            last_speed: 0.0,
+        }
+    }
+
+    pub fn record(&mut self, bytes_read: usize) {
+        let now = Instant::now();
+        self.samples.push_back((now, bytes_read));
+        while let Some(&(time, _)) = self.samples.front() {
+            if now.duration_since(time) > self.window_duration && self.samples.len() > 2 {
+                self.samples.pop_front();
+            } else {
+                break;
+            }
+        }
+        if self.samples.len() >= 2 {
+            let total_bytes: usize = self.samples.iter().map(|(_, b)| *b).sum();
+            let oldest_time = self.samples.front().unwrap().0;
+            let elapsed = now.duration_since(oldest_time).as_secs_f64();
+            if elapsed > 0.05 {
+                let instantaneous = total_bytes as f64 / elapsed;
+                self.last_speed = self.last_speed * 0.4 + instantaneous * 0.6;
+            }
+        }
+    }
+
+    pub fn current_speed_bps(&self) -> f64 {
+        self.last_speed
+    }
+}
+
+impl Default for SpeedLimiter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+

@@ -71,15 +71,51 @@ impl TaskCategory {
     }
 }
 
-/// Extract suggested filename from URL or header value.
+/// Extract suggested filename from URL, Magnet, or eD2K URI.
 pub fn extract_filename_from_url(url_str: &str) -> String {
-    if let Ok(parsed) = url::Url::parse(url_str) {
+    let trimmed = url_str.trim();
+
+    // Check Magnet URI
+    if trimmed.to_lowercase().starts_with("magnet:?") {
+        if let Some(dn_idx) = trimmed.find("dn=") {
+            let rest = &trimmed[dn_idx + 3..];
+            let name_part = rest.split('&').next().unwrap_or("");
+            if let Ok(decoded) = urlencoding::decode(name_part) {
+                let clean = sanitize_filename(decoded.trim());
+                if !clean.is_empty() {
+                    return clean;
+                }
+            }
+        }
+        return "torrent_download".to_string();
+    }
+
+    // Check eD2K URI
+    if trimmed.to_lowercase().starts_with("ed2k://|file|") {
+        let parts: Vec<&str> = trimmed.split('|').collect();
+        if parts.len() >= 3 {
+            let raw_name = parts[2];
+            if let Ok(decoded) = urlencoding::decode(raw_name) {
+                let clean = sanitize_filename(decoded.trim());
+                if !clean.is_empty() {
+                    return clean;
+                }
+            }
+        }
+    }
+
+    if let Ok(parsed) = url::Url::parse(trimmed) {
         if let Some(segments) = parsed.path_segments() {
             let last = segments.last().unwrap_or("");
             if !last.trim().is_empty() {
                 // Remove any url encoded parts
                 if let Ok(decoded) = urlencoding::decode(last) {
-                    let cleaned = sanitize_filename(decoded.trim());
+                    let mut cleaned = sanitize_filename(decoded.trim());
+                    if cleaned.ends_with(".m3u8") {
+                        cleaned = format!("{}.ts", cleaned.strip_suffix(".m3u8").unwrap_or(&cleaned));
+                    } else if cleaned.ends_with(".mpd") {
+                        cleaned = format!("{}.mp4", cleaned.strip_suffix(".mpd").unwrap_or(&cleaned));
+                    }
                     if !cleaned.is_empty() {
                         return cleaned;
                     }

@@ -8,6 +8,73 @@ use uuid::Uuid;
 use crate::engine::state::ChunkState;
 use crate::util::file::TaskCategory;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DownloadProtocol {
+    Http,
+    Ftp,
+    Torrent,
+    Ed2k,
+    Hls,
+    Dash,
+}
+
+impl DownloadProtocol {
+    pub fn detect(url: &str) -> Self {
+        let trimmed = url.trim();
+        let lower = trimmed.to_lowercase();
+        if lower.starts_with("ftp://") {
+            Self::Ftp
+        } else if lower.starts_with("magnet:") || lower.ends_with(".torrent") || lower.contains(".torrent?") {
+            Self::Torrent
+        } else if lower.starts_with("ed2k://") {
+            Self::Ed2k
+        } else if lower.contains(".m3u8") || lower.starts_with("hls://") {
+            Self::Hls
+        } else if lower.contains(".mpd") || lower.starts_with("dash://") {
+            Self::Dash
+        } else {
+            Self::Http
+        }
+    }
+
+    pub fn display_badge(&self) -> &'static str {
+        match self {
+            Self::Http => "HTTP/S",
+            Self::Ftp => "FTP",
+            Self::Torrent => "TORRENT",
+            Self::Ed2k => "eD2K",
+            Self::Hls => "HLS",
+            Self::Dash => "DASH",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            Self::Http => "🌐",
+            Self::Ftp => "📁",
+            Self::Torrent => "🧲",
+            Self::Ed2k => "🐴",
+            Self::Hls => "📺",
+            Self::Dash => "🎬",
+        }
+    }
+
+    pub fn rgb(&self) -> (u8, u8, u8) {
+        match self {
+            Self::Http => (52, 152, 219),    // Blue
+            Self::Ftp => (230, 126, 34),     // Orange
+            Self::Torrent => (155, 89, 182), // Purple
+            Self::Ed2k => (26, 188, 156),    // Teal
+            Self::Hls => (46, 204, 113),     // Green
+            Self::Dash => (241, 196, 15),    // Amber
+        }
+    }
+}
+
+fn default_protocol() -> DownloadProtocol {
+    DownloadProtocol::Http
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub enum TaskStatus {
@@ -45,6 +112,8 @@ impl TaskStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadTask {
     pub id: Uuid,
+    #[serde(default = "default_protocol")]
+    pub protocol: DownloadProtocol,
     pub url: String,
     pub file_name: String,
     pub save_path: PathBuf,
@@ -69,8 +138,10 @@ impl DownloadTask {
         num_connections: usize,
         category: TaskCategory,
     ) -> Self {
+        let protocol = DownloadProtocol::detect(&url);
         Self {
             id: Uuid::new_v4(),
+            protocol,
             url,
             file_name,
             save_path,

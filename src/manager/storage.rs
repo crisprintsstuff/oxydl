@@ -6,6 +6,18 @@ use serde::{Deserialize, Serialize};
 use crate::manager::task::{DownloadTask, TaskStatus};
 use crate::util::file::{get_app_data_dir, get_default_download_dir};
 
+fn default_true() -> bool { true }
+fn default_false() -> bool { false }
+fn default_user_agent() -> String {
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) OxyDL/0.1.0".to_string()
+}
+fn default_timeout() -> u64 { 30 }
+fn default_torrent_port() -> u16 { 6881 }
+fn default_torrent_peers() -> usize { 50 }
+fn default_ed2k_port() -> u16 { 4662 }
+fn default_hls_segments() -> usize { 4 }
+fn default_api_port() -> u16 { 19532 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
     pub default_save_dir: PathBuf,
@@ -14,6 +26,44 @@ pub struct AppSettings {
     pub monitor_clipboard: bool,
     pub speed_limit_kbps: Option<u64>,
     pub dark_mode: bool,
+
+    // General & Behavior
+    #[serde(default = "default_true")]
+    pub auto_start_with_windows: bool,
+    #[serde(default = "default_false")]
+    pub minimize_to_tray: bool,
+    #[serde(default = "default_true")]
+    pub play_sound_on_complete: bool,
+
+    // Network & Connection
+    #[serde(default = "default_user_agent")]
+    pub user_agent: String,
+    #[serde(default = "default_timeout")]
+    pub socket_timeout_secs: u64,
+
+    // Protocols
+    #[serde(default = "default_true")]
+    pub ftp_passive_mode: bool,
+    #[serde(default = "default_torrent_port")]
+    pub torrent_port: u16,
+    #[serde(default = "default_torrent_peers")]
+    pub torrent_max_peers: usize,
+    #[serde(default = "default_ed2k_port")]
+    pub ed2k_port: u16,
+    #[serde(default = "default_hls_segments")]
+    pub hls_parallel_segments: usize,
+
+    // Storage
+    #[serde(default = "default_true")]
+    pub categorize_subfolders: bool,
+
+    // MCP & Browser Integration
+    #[serde(default = "default_true")]
+    pub enable_api_server: bool,
+    #[serde(default = "default_api_port")]
+    pub api_port: u16,
+    #[serde(default = "default_true")]
+    pub enable_mcp_server: bool,
 }
 
 impl Default for AppSettings {
@@ -25,6 +75,20 @@ impl Default for AppSettings {
             monitor_clipboard: true,
             speed_limit_kbps: None,
             dark_mode: true,
+            auto_start_with_windows: true,
+            minimize_to_tray: false,
+            play_sound_on_complete: true,
+            user_agent: default_user_agent(),
+            socket_timeout_secs: 30,
+            ftp_passive_mode: true,
+            torrent_port: 6881,
+            torrent_max_peers: 50,
+            ed2k_port: 4662,
+            hls_parallel_segments: 4,
+            categorize_subfolders: true,
+            enable_api_server: true,
+            api_port: 19532,
+            enable_mcp_server: true,
         }
     }
 }

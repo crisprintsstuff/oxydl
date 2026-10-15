@@ -52,14 +52,36 @@ Inspired by IDM's legendary interface, selecting any download reveals the live s
 - Live speed and progress metrics per connection thread.
 - Moving-average speed smoothing and accurate ETA calculation.
 
-### 5. Automated Clipboard Monitoring
-OxyDL includes a background clipboard watcher that identifies copied download links (`http://` or `https://`) and renders a quick-action prompt banner to queue or download immediately.
+### 5. Multi-Protocol Download Engine
+OxyDL supports unified downloading across modern and legacy protocols with automatic protocol scheme detection and protocol badge indicators:
+- **HTTP / HTTPS**: Multi-threaded dynamic byte-range partitioning (up to 32 parallel connections).
+- **FTP**: Pure async FTP client supporting passive mode (`PASV`), binary mode (`TYPE I`), file size discovery (`SIZE`), and byte-level resume (`REST`).
+- **BitTorrent & Magnet URIs**: Magnet link parsing (`magnet:?xt=urn:btih:...`), tracker querying, compact peer discovery, and block-level streaming.
+- **eD2K (eDonkey2000)**: Native `ed2k://|file|...` URI support, 9,500 KB block partitioning, and sparse file allocation.
+- **HLS Streaming**: HTTP Live Streaming (`.m3u8`) master and media playlist parsing with concurrent segment downloading and video assembly.
+- **DASH Streaming**: Dynamic Adaptive Streaming over HTTP (`.mpd`) XML manifest parsing and segment template fetching.
 
-### 6. True Portable Mode vs. System Install
+### 6. Model Context Protocol (MCP) Server for AI Assistants
+OxyDL includes a built-in MCP server compliant with Anthropic and Model Context Protocol specifications:
+- **Stdio Mode**: Launch with `oxydl --mcp` for direct integration into Claude Desktop, Cursor, and Antigravity.
+- **HTTP Endpoint**: Access via `POST http://127.0.0.1:19532/mcp` for local web and automation agents.
+- **Available Tools**:
+  - `add_download`: Add and schedule downloads across any supported protocol.
+  - `list_downloads`: Query downloads filtered by status (`all`, `downloading`, `completed`, `paused`, `failed`).
+  - `pause_download` & `resume_download`: Control specific tasks by ID or filename.
+  - `cancel_download`: Abort tasks with optional on-disk file removal.
+  - `get_download_details`: Granular piece, chunk, and protocol-level diagnostics.
+  - `get_system_stats`: Global transfer speeds, active connection counts, and storage metrics.
+  - `set_speed_limit`: Dynamically adjust global bandwidth throttling.
+
+### 7. Automated Clipboard Monitoring
+OxyDL includes a background clipboard watcher that identifies copied download links (`http://`, `https://`, `ftp://`, `magnet:`, `ed2k://`, `.m3u8`, `.mpd`) and renders a quick-action prompt banner to queue or download immediately.
+
+### 8. True Portable Mode vs. System Install
 - **Portable Mode**: Place `portable.txt` or a `data/` folder next to `oxydl.exe`. All task lists (`tasks.json`) and preferences (`settings.json`) are stored strictly inside `./data/`. Perfect for USB drives and zero-trace usage.
 - **System Mode**: If no portable marker is present, OxyDL stores settings and task databases in standard OS directories (`%APPDATA%/OxyDL` on Windows, `~/.config/OxyDL` on Linux).
 
-### 7. Chrome & Firefox Integration via Local REST API
+### 9. Chrome & Firefox Integration via Local REST API
 OxyDL features a local, asynchronous HTTP REST API listening on `http://127.0.0.1:19532`:
 - **Zero Brittle Native Messaging**: Avoids complex registry manifests and Native Messaging host headaches.
 - **Universal Browser Support**: Works identically across Google Chrome, Mozilla Firefox, Microsoft Edge, Brave, Opera, and Vivaldi.
@@ -86,27 +108,34 @@ oxydl/
 │   ├── build_release.sh     # Release packaging script (Portable + Installer + Extension)
 │   └── inno_setup.iss       # Inno Setup script fallback
 └── src/
-    ├── main.rs              # Application entry point & window bootstrapping
+    ├── main.rs              # Application entry point & CLI flags (--mcp)
+    ├── lib.rs               # Library root exposing engine, manager, and MCP
     ├── app.rs               # Main GUI state (eframe / egui) & event loop
-    ├── api.rs               # Local HTTP API (127.0.0.1:19532) for browser integration
-    ├── engine/              # Multi-part download engine
+    ├── api.rs               # Local HTTP API (127.0.0.1:19532) & /mcp endpoint
+    ├── mcp.rs               # Model Context Protocol (MCP) server implementation
+    ├── engine/              # Multi-protocol download engines
     │   ├── client.rs        # HTTP client, user-agent, headers & URL probe
-    │   ├── downloader.rs    # Concurrent chunk workers & stream writing
+    │   ├── downloader.rs    # Protocol dispatcher & worker coordinator
+    │   ├── ftp.rs           # Pure async FTP engine (PASV, binary, resume)
+    │   ├── torrent.rs       # BitTorrent engine (Magnet URIs & trackers)
+    │   ├── ed2k.rs          # eDonkey2000 link parser & chunk stream
+    │   ├── hls.rs           # HLS (.m3u8) streaming media parser & fetcher
+    │   ├── dash.rs          # DASH (.mpd) XML manifest parser & downloader
     │   ├── speed.rs         # Moving-average speed calculation & throttling
     │   └── state.rs         # Chunk tracking & resume metadata (.oxydl.meta)
     ├── manager/             # Task queue & persistence
     │   ├── queue.rs         # Queue coordinator & concurrency scheduler
     │   ├── storage.rs       # tasks.json & settings.json persistence
-    │   └── task.rs          # DownloadTask definitions & status types
+    │   └── task.rs          # DownloadTask & DownloadProtocol definitions
     ├── ui/                  # Modular desktop GUI components
-    │   ├── add_dialog.rs    # "Add New Download" modal with probe preview
+    │   ├── add_dialog.rs    # "Add New Download" modal with protocol detection
     │   ├── segment_bar.rs   # IDM multi-stream segment visualizer
-    │   ├── settings_dialog.rs # Preferences modal
+    │   ├── settings_dialog.rs # 5-tab settings modal (General, Network, Protocols, AI/MCP)
     │   ├── sidebar.rs       # Category navigation & task count badges
-    │   ├── table.rs         # Downloads list, status badges, & context menu
+    │   ├── table.rs         # Downloads list with protocol badges & context menu
     │   └── toolbar.rs       # Top action controls (Add, Resume, Pause, Speed)
     └── util/                # Formatters, file sanitization, & clipboard
-        ├── clipboard.rs     # Clipboard URL detector
+        ├── clipboard.rs     # Clipboard multi-protocol URL detector
         ├── file.rs          # Category deduction & sparse file preallocation
         └── format.rs        # Byte, speed, and ETA formatting
 ```

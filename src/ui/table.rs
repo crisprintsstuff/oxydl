@@ -50,6 +50,7 @@ pub fn render_table(
                 .show(ui, |ui| {
                     // Table Header
                     ui.label(RichText::new("File Name").strong());
+                    ui.label(RichText::new("Protocol").strong());
                     ui.label(RichText::new("Size").strong());
                     ui.label(RichText::new("Progress").strong());
                     ui.label(RichText::new("Status").strong());
@@ -132,7 +133,10 @@ pub fn render_table(
                             }
                         });
 
-                        // Column 2: File Size
+                        // Column 2: Protocol Badge
+                        render_protocol_badge(ui, &task.protocol);
+
+                        // Column 3: File Size
                         let size_text = match task.total_bytes {
                             Some(tot) => format_bytes(tot),
                             None => format!("{} (Unknown)", format_bytes(task.downloaded_bytes)),
@@ -197,3 +201,20 @@ fn render_status_badge(ui: &mut Ui, status: &TaskStatus) {
         color,
     );
 }
+
+fn render_protocol_badge(ui: &mut Ui, protocol: &crate::manager::task::DownloadProtocol) {
+    let (r, g, b) = protocol.rgb();
+    let color = Color32::from_rgb(r, g, b);
+    let label = format!("{} {}", protocol.icon(), protocol.display_badge());
+
+    let (rect, _) = ui.allocate_exact_size(Vec2::new(76.0, 18.0), Sense::hover());
+    ui.painter().rect_filled(rect, 3.0, color.gamma_multiply(0.2));
+    ui.painter().text(
+        rect.center(),
+        egui::Align2::CENTER_CENTER,
+        label,
+        egui::FontId::proportional(10.5),
+        color,
+    );
+}
+

@@ -4,6 +4,9 @@ use std::path::PathBuf;
 use egui::{Color32, RichText, Window};
 
 use crate::engine::client::{create_http_client, probe_url, ProbeResult};
+use crate::engine::ed2k::Ed2kLink;
+use crate::engine::torrent::MagnetInfo;
+use crate::manager::task::DownloadProtocol;
 use crate::util::file::{extract_filename_from_url, TaskCategory};
 use crate::util::format::format_bytes;
 
@@ -121,7 +124,7 @@ pub fn render_add_dialog(
                     if let Ok(mut cb) = arboard::Clipboard::new() {
                         if let Ok(text) = cb.get_text() {
                             let text = text.trim();
-                            if text.starts_with("http://") || text.starts_with("https://") {
+                            if !text.is_empty() {
                                 state.url = text.to_string();
                                 state.file_name = extract_filename_from_url(&state.url);
                                 state.category = TaskCategory::from_filename(&state.file_name);
@@ -129,6 +132,21 @@ pub fn render_add_dialog(
                         }
                     }
                 }
+            });
+
+            // Protocol Indicator
+            let proto = DownloadProtocol::detect(&state.url);
+            let (r, g, b) = proto.rgb();
+            let proto_color = Color32::from_rgb(r, g, b);
+
+            ui.horizontal(|ui| {
+                ui.label(RichText::new("Protocol:").size(12.0));
+                ui.label(
+                    RichText::new(format!("{} {}", proto.icon(), proto.display_badge()))
+                        .color(proto_color)
+                        .strong()
+                        .size(12.0),
+                );
             });
 
             ui.add_space(6.0);
@@ -143,22 +161,66 @@ pub fn render_add_dialog(
 
                 if ui.button(probe_btn_label).clicked() && !state.url.trim().is_empty() && !state.is_probing {
                     let url = state.url.clone();
-                    state.is_probing = true;
-                    state.error_msg = None;
+                    let proto = DownloadProtocol::detect(&url);
 
-                    let (tx, rx) = tokio::sync::oneshot::channel();
-                    state.probe_pending = Some(rx);
-
-                    let ctx_clone = ctx.clone();
-                    tokio::spawn(async move {
-                        if let Ok(client) = create_http_client() {
-                            let probe = probe_url(&client, &url).await;
-                            let _ = tx.send(probe);
-                        } else {
-                            let _ = tx.send(Err("Failed to initialize HTTP client".to_string()));
+                    match proto {
+                        DownloadProtocol::Torrent => {
+                            match MagnetInfo::parse(&url) {
+                                Ok(magnet) => {
+                                    state.file_name = magnet.display_name.clone();
+                                    state.category = TaskCategory::from_filename(&state.file_name);
+                                    state.probe_result = Some(ProbeResult {
+                                        url: url.clone(),
+                                        suggested_filename: magnet.display_name,
+                                        total_bytes: magnet.total_bytes,
+                                        supports_ranges: false,
+                                        content_type: Some("application/x-bittorrent".to_string()),
+                                    });
+                                    state.error_msg = None;
+                                }
+                                Err(e) => {
+                                    state.error_msg = Some(format!("BitTorrent error: {}", e));
+                                }
+                            }
                         }
-                        ctx_clone.request_repaint();
-                    });
+                        DownloadProtocol::Ed2k => {
+                            match Ed2kLink::parse(&url) {
+                                Ok(ed2k) => {
+                                    state.file_name = ed2k.file_name.clone();
+                                    state.category = TaskCategory::from_filename(&state.file_name);
+                                    state.probe_result = Some(ProbeResult {
+                                        url: url.clone(),
+                                        suggested_filename: ed2k.file_name,
+                                        total_bytes: Some(ed2k.file_size),
+                                        supports_ranges: false,
+                                        content_type: Some("application/x-ed2k".to_string()),
+                                    });
+                                    state.error_msg = None;
+                                }
+                                Err(e) => {
+                                    state.error_msg = Some(format!("eD2K error: {}", e));
+                                }
+                            }
+                        }
+                        DownloadProtocol::Http | DownloadProtocol::Ftp | DownloadProtocol::Hls | DownloadProtocol::Dash => {
+                            state.is_probing = true;
+                            state.error_msg = None;
+
+                            let (tx, rx) = tokio::sync::oneshot::channel();
+                            state.probe_pending = Some(rx);
+
+                            let ctx_clone = ctx.clone();
+                            tokio::spawn(async move {
+                                if let Ok(client) = create_http_client() {
+                                    let probe = probe_url(&client, &url).await;
+                                    let _ = tx.send(probe);
+                                } else {
+                                    let _ = tx.send(Err("Failed to initialize client".to_string()));
+                                }
+                                ctx_clone.request_repaint();
+                            });
+                        }
+                    }
                 }
 
                 if let Some(ref probe) = state.probe_result {

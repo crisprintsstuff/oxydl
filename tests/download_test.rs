@@ -108,3 +108,91 @@ async fn test_queue_manager_lifecycle() {
         assert!(task.is_none());
     }
 }
+
+#[test]
+fn test_protocol_detection() {
+    use oxydl::manager::task::DownloadProtocol;
+
+    assert_eq!(DownloadProtocol::detect("http://example.com/file.zip"), DownloadProtocol::Http);
+    assert_eq!(DownloadProtocol::detect("https://example.com/file.zip"), DownloadProtocol::Http);
+    assert_eq!(DownloadProtocol::detect("ftp://speedtest.tele2.net/1MB.zip"), DownloadProtocol::Ftp);
+    assert_eq!(DownloadProtocol::detect("magnet:?xt=urn:btih:da39a3ee5e6b4b0d3255bfef95601890afd80709&dn=Ubuntu"), DownloadProtocol::Torrent);
+    assert_eq!(DownloadProtocol::detect("https://example.com/arch.torrent"), DownloadProtocol::Torrent);
+    assert_eq!(DownloadProtocol::detect("ed2k://|file|test.iso|1048576|D3B07384D113EDEC49EAA6238AD5FF00|/"), DownloadProtocol::Ed2k);
+    assert_eq!(DownloadProtocol::detect("https://video.example.com/stream/index.m3u8"), DownloadProtocol::Hls);
+    assert_eq!(DownloadProtocol::detect("https://video.example.com/dash/manifest.mpd"), DownloadProtocol::Dash);
+}
+
+#[test]
+fn test_magnet_link_parsing() {
+    use oxydl::engine::torrent::MagnetInfo;
+
+    let magnet_uri = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=MyVideo.mp4&xl=10485760";
+    let parsed = MagnetInfo::parse(magnet_uri).expect("Failed to parse magnet link");
+
+    assert_eq!(parsed.info_hash_hex, "0123456789abcdef0123456789abcdef01234567");
+    assert_eq!(parsed.display_name, "MyVideo.mp4");
+    assert_eq!(parsed.total_bytes, Some(10485760));
+}
+
+#[test]
+fn test_ed2k_link_parsing() {
+    use oxydl::engine::ed2k::Ed2kLink;
+
+    let ed2k_uri = "ed2k://|file|sample_file.rar|52428800|31D6CFE0D16AE931B73C59D7E0C089C0|/";
+    let parsed = Ed2kLink::parse(ed2k_uri).expect("Failed to parse eD2K link");
+
+    assert_eq!(parsed.file_name, "sample_file.rar");
+    assert_eq!(parsed.file_size, 52428800);
+    assert_eq!(parsed.hash_hex, "31D6CFE0D16AE931B73C59D7E0C089C0");
+}
+
+#[tokio::test]
+async fn test_mcp_server_initialize_and_tools() {
+    use oxydl::mcp::{McpServer, JsonRpcRequest};
+    use oxydl::manager::queue::QueueManager;
+
+    let queue = QueueManager::new();
+    let mcp = McpServer::new(queue);
+
+    // Test initialize request
+    let init_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(serde_json::json!(1)),
+        method: "initialize".to_string(),
+        params: Some(serde_json::json!({})),
+    };
+    let init_resp = mcp.handle_request(init_req).await.expect("Expected response");
+    assert!(init_resp.result.is_some());
+    let res = init_resp.result.unwrap();
+    assert_eq!(res["serverInfo"]["name"], "oxydl-mcp");
+
+    // Test tools/list request
+    let list_tools_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(serde_json::json!(2)),
+        method: "tools/list".to_string(),
+        params: Some(serde_json::json!({})),
+    };
+    let tools_resp = mcp.handle_request(list_tools_req).await.expect("Expected response");
+    let res = tools_resp.result.unwrap();
+    let tools = res["tools"].as_array().unwrap();
+    assert_eq!(tools.len(), 8);
+
+    // Test tools/call list_downloads
+    let call_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: Some(serde_json::json!(3)),
+        method: "tools/call".to_string(),
+        params: Some(serde_json::json!({
+            "name": "list_downloads",
+            "arguments": {
+                "status": "all"
+            }
+        })),
+    };
+    let call_resp = mcp.handle_request(call_req).await.expect("Expected response");
+    let res = call_resp.result.unwrap();
+    assert_eq!(res["isError"], false);
+}
+

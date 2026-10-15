@@ -144,6 +144,32 @@ impl ApiServer {
             return Ok(());
         }
 
+        // POST /mcp (Model Context Protocol JSON-RPC 2.0 endpoint)
+        if method == "POST" && path == "/mcp" {
+            if let Some(pos) = request_str.find("\r\n\r\n") {
+                let body_slice = &request_str[pos + 4..];
+                if let Ok(req) = serde_json::from_str::<crate::mcp::JsonRpcRequest>(body_slice.trim()) {
+                    let mcp_server = crate::mcp::McpServer::new(self.queue.clone());
+                    if let Some(resp) = mcp_server.handle_request(req).await {
+                        let resp_val = serde_json::to_value(&resp).unwrap_or(serde_json::Value::Null);
+                        self.send_json_response(&mut stream, 200, &resp_val).await?;
+                        return Ok(());
+                    } else {
+                        let empty_resp = "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n";
+                        stream.write_all(empty_resp.as_bytes()).await?;
+                        return Ok(());
+                    }
+                }
+            }
+
+            let err = serde_json::json!({
+                "jsonrpc": "2.0",
+                "error": { "code": -32700, "message": "Parse error: invalid JSON-RPC payload" }
+            });
+            self.send_json_response(&mut stream, 400, &err).await?;
+            return Ok(());
+        }
+
         // 404 Not Found
         let not_found = serde_json::json!({
             "success": false,

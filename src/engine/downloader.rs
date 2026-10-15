@@ -55,6 +55,12 @@ impl Downloader {
     where
         F: FnMut(ProgressEvent) + Send + 'static,
     {
+        let protocol = crate::manager::task::DownloadProtocol::detect(&self.options.url);
+        if protocol != crate::manager::task::DownloadProtocol::Http {
+            self.run_specialized_protocol(protocol, on_progress).await;
+            return;
+        }
+
         let client = match create_http_client() {
             Ok(c) => c,
             Err(e) => {
@@ -452,6 +458,380 @@ impl Downloader {
         chunks[chunk_idx].status = ChunkStatus::Completed;
         if !supports_ranges {
             chunks[chunk_idx].end = downloaded.saturating_sub(1);
+        }
+    }
+
+    async fn run_specialized_protocol<F>(&self, protocol: crate::manager::task::DownloadProtocol, on_progress: F)
+    where
+        F: FnMut(ProgressEvent) + Send + 'static,
+    {
+        let on_progress_mutex = Arc::new(Mutex::new(on_progress));
+        let stop_signal = self.stop_signal.clone();
+
+        match protocol {
+            crate::manager::task::DownloadProtocol::Ftp => {
+                let cb_prog = on_progress_mutex.clone();
+                let initial_offset = if self.options.save_path.exists() {
+                    std::fs::metadata(&self.options.save_path).map(|m| m.len()).unwrap_or(0)
+                } else {
+                    0
+                };
+                let res = crate::engine::ftp::FtpDownloader::download(
+                    &self.options.url,
+                    &self.options.save_path,
+                    initial_offset,
+                    stop_signal.clone(),
+                    move |downloaded, total, speed| {
+                        let cb = cb_prog.clone();
+                        tokio::spawn(async move {
+                            let mut guard = cb.lock().await;
+                            let eta = if speed > 0.0 {
+                                total.map(|tot| ((tot.saturating_sub(downloaded) as f64) / speed) as u64)
+                            } else {
+                                None
+                            };
+                            guard(ProgressEvent {
+                                downloaded_bytes: downloaded,
+                                total_bytes: total,
+                                speed_bps: speed,
+                                eta_seconds: eta,
+                                chunks: vec![ChunkState {
+                                    index: 0,
+                                    start: 0,
+                                    end: total.unwrap_or(downloaded).saturating_sub(1),
+                                    downloaded,
+                                    status: ChunkStatus::Downloading,
+                                }],
+                                is_complete: false,
+                                is_paused: false,
+                                error: None,
+                            });
+                        });
+                    },
+                ).await;
+
+                let mut guard = on_progress_mutex.lock().await;
+                match res {
+                    Ok(ftp_res) => {
+                        let is_stopped = stop_signal.load(Ordering::Relaxed);
+                        guard(ProgressEvent {
+                            downloaded_bytes: ftp_res.downloaded_bytes,
+                            total_bytes: ftp_res.total_bytes,
+                            speed_bps: 0.0,
+                            eta_seconds: if is_stopped { None } else { Some(0) },
+                            chunks: vec![ChunkState {
+                                index: 0,
+                                start: 0,
+                                end: ftp_res.total_bytes.unwrap_or(ftp_res.downloaded_bytes).saturating_sub(1),
+                                downloaded: ftp_res.downloaded_bytes,
+                                status: if is_stopped { ChunkStatus::Pending } else { ChunkStatus::Completed },
+                            }],
+                            is_complete: !is_stopped,
+                            is_paused: is_stopped,
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        guard(ProgressEvent {
+                            downloaded_bytes: 0,
+                            total_bytes: None,
+                            speed_bps: 0.0,
+                            eta_seconds: None,
+                            chunks: Vec::new(),
+                            is_complete: false,
+                            is_paused: false,
+                            error: Some(format!("FTP Error: {}", e)),
+                        });
+                    }
+                }
+            }
+
+            crate::manager::task::DownloadProtocol::Torrent => {
+                let cb_prog = on_progress_mutex.clone();
+                let save_dir = self.options.save_path.parent().unwrap_or_else(|| std::path::Path::new("."));
+                let res = crate::engine::torrent::TorrentDownloader::download(
+                    &self.options.url,
+                    save_dir,
+                    stop_signal.clone(),
+                    move |downloaded, total, speed| {
+                        let cb = cb_prog.clone();
+                        tokio::spawn(async move {
+                            let mut guard = cb.lock().await;
+                            let eta = if speed > 0.0 {
+                                total.map(|tot| ((tot.saturating_sub(downloaded) as f64) / speed) as u64)
+                            } else {
+                                None
+                            };
+                            guard(ProgressEvent {
+                                downloaded_bytes: downloaded,
+                                total_bytes: total,
+                                speed_bps: speed,
+                                eta_seconds: eta,
+                                chunks: vec![ChunkState {
+                                    index: 0,
+                                    start: 0,
+                                    end: total.unwrap_or(downloaded).saturating_sub(1),
+                                    downloaded,
+                                    status: ChunkStatus::Downloading,
+                                }],
+                                is_complete: false,
+                                is_paused: false,
+                                error: None,
+                            });
+                        });
+                    },
+                ).await;
+
+                let mut guard = on_progress_mutex.lock().await;
+                match res {
+                    Ok(bytes) => {
+                        let is_stopped = stop_signal.load(Ordering::Relaxed);
+                        guard(ProgressEvent {
+                            downloaded_bytes: bytes,
+                            total_bytes: Some(bytes),
+                            speed_bps: 0.0,
+                            eta_seconds: if is_stopped { None } else { Some(0) },
+                            chunks: vec![ChunkState {
+                                index: 0,
+                                start: 0,
+                                end: bytes.saturating_sub(1),
+                                downloaded: bytes,
+                                status: if is_stopped { ChunkStatus::Pending } else { ChunkStatus::Completed },
+                            }],
+                            is_complete: !is_stopped,
+                            is_paused: is_stopped,
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        guard(ProgressEvent {
+                            downloaded_bytes: 0,
+                            total_bytes: None,
+                            speed_bps: 0.0,
+                            eta_seconds: None,
+                            chunks: Vec::new(),
+                            is_complete: false,
+                            is_paused: false,
+                            error: Some(format!("BitTorrent Error: {}", e)),
+                        });
+                    }
+                }
+            }
+
+            crate::manager::task::DownloadProtocol::Ed2k => {
+                let cb_prog = on_progress_mutex.clone();
+                let res = crate::engine::ed2k::Ed2kDownloader::download(
+                    &self.options.url,
+                    &self.options.save_path,
+                    stop_signal.clone(),
+                    move |downloaded, total, speed| {
+                        let cb = cb_prog.clone();
+                        tokio::spawn(async move {
+                            let mut guard = cb.lock().await;
+                            let eta = if speed > 0.0 {
+                                total.map(|tot| ((tot.saturating_sub(downloaded) as f64) / speed) as u64)
+                            } else {
+                                None
+                            };
+                            guard(ProgressEvent {
+                                downloaded_bytes: downloaded,
+                                total_bytes: total,
+                                speed_bps: speed,
+                                eta_seconds: eta,
+                                chunks: vec![ChunkState {
+                                    index: 0,
+                                    start: 0,
+                                    end: total.unwrap_or(downloaded).saturating_sub(1),
+                                    downloaded,
+                                    status: ChunkStatus::Downloading,
+                                }],
+                                is_complete: false,
+                                is_paused: false,
+                                error: None,
+                            });
+                        });
+                    },
+                ).await;
+
+                let mut guard = on_progress_mutex.lock().await;
+                match res {
+                    Ok(bytes) => {
+                        let is_stopped = stop_signal.load(Ordering::Relaxed);
+                        guard(ProgressEvent {
+                            downloaded_bytes: bytes,
+                            total_bytes: Some(bytes),
+                            speed_bps: 0.0,
+                            eta_seconds: if is_stopped { None } else { Some(0) },
+                            chunks: vec![ChunkState {
+                                index: 0,
+                                start: 0,
+                                end: bytes.saturating_sub(1),
+                                downloaded: bytes,
+                                status: if is_stopped { ChunkStatus::Pending } else { ChunkStatus::Completed },
+                            }],
+                            is_complete: !is_stopped,
+                            is_paused: is_stopped,
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        guard(ProgressEvent {
+                            downloaded_bytes: 0,
+                            total_bytes: None,
+                            speed_bps: 0.0,
+                            eta_seconds: None,
+                            chunks: Vec::new(),
+                            is_complete: false,
+                            is_paused: false,
+                            error: Some(format!("eD2K Error: {}", e)),
+                        });
+                    }
+                }
+            }
+
+            crate::manager::task::DownloadProtocol::Hls => {
+                let cb_prog = on_progress_mutex.clone();
+                let res = crate::engine::hls::HlsDownloader::download(
+                    &self.options.url,
+                    &self.options.save_path,
+                    stop_signal.clone(),
+                    move |downloaded, total, speed| {
+                        let cb = cb_prog.clone();
+                        tokio::spawn(async move {
+                            let mut guard = cb.lock().await;
+                            let eta = if speed > 0.0 {
+                                total.map(|tot| ((tot.saturating_sub(downloaded) as f64) / speed) as u64)
+                            } else {
+                                None
+                            };
+                            guard(ProgressEvent {
+                                downloaded_bytes: downloaded,
+                                total_bytes: total,
+                                speed_bps: speed,
+                                eta_seconds: eta,
+                                chunks: vec![ChunkState {
+                                    index: 0,
+                                    start: 0,
+                                    end: total.unwrap_or(downloaded).saturating_sub(1),
+                                    downloaded,
+                                    status: ChunkStatus::Downloading,
+                                }],
+                                is_complete: false,
+                                is_paused: false,
+                                error: None,
+                            });
+                        });
+                    },
+                ).await;
+
+                let mut guard = on_progress_mutex.lock().await;
+                match res {
+                    Ok(bytes) => {
+                        let is_stopped = stop_signal.load(Ordering::Relaxed);
+                        guard(ProgressEvent {
+                            downloaded_bytes: bytes,
+                            total_bytes: Some(bytes),
+                            speed_bps: 0.0,
+                            eta_seconds: if is_stopped { None } else { Some(0) },
+                            chunks: vec![ChunkState {
+                                index: 0,
+                                start: 0,
+                                end: bytes.saturating_sub(1),
+                                downloaded: bytes,
+                                status: if is_stopped { ChunkStatus::Pending } else { ChunkStatus::Completed },
+                            }],
+                            is_complete: !is_stopped,
+                            is_paused: is_stopped,
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        guard(ProgressEvent {
+                            downloaded_bytes: 0,
+                            total_bytes: None,
+                            speed_bps: 0.0,
+                            eta_seconds: None,
+                            chunks: Vec::new(),
+                            is_complete: false,
+                            is_paused: false,
+                            error: Some(format!("HLS Error: {}", e)),
+                        });
+                    }
+                }
+            }
+
+            crate::manager::task::DownloadProtocol::Dash => {
+                let cb_prog = on_progress_mutex.clone();
+                let res = crate::engine::dash::DashDownloader::download(
+                    &self.options.url,
+                    &self.options.save_path,
+                    stop_signal.clone(),
+                    move |downloaded, total, speed| {
+                        let cb = cb_prog.clone();
+                        tokio::spawn(async move {
+                            let mut guard = cb.lock().await;
+                            let eta = if speed > 0.0 {
+                                total.map(|tot| ((tot.saturating_sub(downloaded) as f64) / speed) as u64)
+                            } else {
+                                None
+                            };
+                            guard(ProgressEvent {
+                                downloaded_bytes: downloaded,
+                                total_bytes: total,
+                                speed_bps: speed,
+                                eta_seconds: eta,
+                                chunks: vec![ChunkState {
+                                    index: 0,
+                                    start: 0,
+                                    end: total.unwrap_or(downloaded).saturating_sub(1),
+                                    downloaded,
+                                    status: ChunkStatus::Downloading,
+                                }],
+                                is_complete: false,
+                                is_paused: false,
+                                error: None,
+                            });
+                        });
+                    },
+                ).await;
+
+                let mut guard = on_progress_mutex.lock().await;
+                match res {
+                    Ok(bytes) => {
+                        let is_stopped = stop_signal.load(Ordering::Relaxed);
+                        guard(ProgressEvent {
+                            downloaded_bytes: bytes,
+                            total_bytes: Some(bytes),
+                            speed_bps: 0.0,
+                            eta_seconds: if is_stopped { None } else { Some(0) },
+                            chunks: vec![ChunkState {
+                                index: 0,
+                                start: 0,
+                                end: bytes.saturating_sub(1),
+                                downloaded: bytes,
+                                status: if is_stopped { ChunkStatus::Pending } else { ChunkStatus::Completed },
+                            }],
+                            is_complete: !is_stopped,
+                            is_paused: is_stopped,
+                            error: None,
+                        });
+                    }
+                    Err(e) => {
+                        guard(ProgressEvent {
+                            downloaded_bytes: 0,
+                            total_bytes: None,
+                            speed_bps: 0.0,
+                            eta_seconds: None,
+                            chunks: Vec::new(),
+                            is_complete: false,
+                            is_paused: false,
+                            error: Some(format!("DASH Error: {}", e)),
+                        });
+                    }
+                }
+            }
+
+            crate::manager::task::DownloadProtocol::Http => {}
         }
     }
 }
