@@ -64,6 +64,15 @@ zip -r "$DIST_DIR/$ZIP_NAME" ./* > /dev/null
 # Copy Installer to dist
 cp "$INSTALLER_EXE" "$DIST_DIR/install_oxidm.exe"
 
+# 5. Package Browser Extension
+echo ""
+echo "--> [5/5] Packaging Chrome & Firefox browser extension..."
+cd "$DIR/extension"
+EXT_ZIP="oxidm-browser-extension.zip"
+rm -f "$DIST_DIR/$EXT_ZIP"
+zip -r "$DIST_DIR/$EXT_ZIP" ./* -x "*.git*" > /dev/null
+cd "$DIR"
+
 echo ""
 echo "=========================================================="
 echo "  Build Complete! Distribution Artifacts Ready:          "
@@ -71,4 +80,6 @@ echo "=========================================================="
 echo " 1. Native Windows Installer: $DIST_DIR/install_oxidm.exe ($(ls -lh "$DIST_DIR/install_oxidm.exe" | awk '{print $5}'))"
 echo " 2. Portable ZIP Package:     $DIST_DIR/$ZIP_NAME ($(ls -lh "$DIST_DIR/$ZIP_NAME" | awk '{print $5}'))"
 echo " 3. Portable Folder:          $DIST_DIR/portable/ (oxidm.exe + portable.txt)"
+echo " 4. Browser Extension:        $DIST_DIR/$EXT_ZIP ($(ls -lh "$DIST_DIR/$EXT_ZIP" | awk '{print $5}'))"
 echo "=========================================================="
+

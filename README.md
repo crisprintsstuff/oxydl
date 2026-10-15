@@ -14,6 +14,7 @@
 | **IDM-Style Segment Visualizer** | ✅ Real-time color-coded chunk bars | ✅ |
 | **Instant Pause & Resume** | ✅ Byte-level `.oxidm.meta` tracking | ✅ |
 | **Speed Limiter** | ✅ Configurable per-task / global throttling | ✅ |
+| **Browser Extension** | ✅ Chrome, Edge, Firefox, Brave (Zero-bloat) | ⚠️ Proprietary / Adware / Popups |
 | **Clipboard Link Sniffer** | ✅ Auto-detects copied `http`/`https` URLs | ✅ |
 | **Portable Mode** | ✅ Runs from USB / any folder (`./data`) | ⚠️ Requires registry / AppData |
 | **Zero Runtime Dependencies** | ✅ Self-contained, Pure Rustls TLS | ❌ OpenSSL / VC++ Runtimes required |
@@ -44,6 +45,13 @@ Oxidm includes a background clipboard watcher that identifies copied download li
 - **Portable Mode**: Place `portable.txt` or a `data/` folder next to `oxidm.exe`. All task lists (`tasks.json`) and preferences (`settings.json`) are stored strictly inside `./data/`. Perfect for USB drives and zero-trace usage.
 - **System Mode**: If no portable marker is present, Oxidm stores settings and task databases in standard OS directories (`%APPDATA%/Oxidm` on Windows, `~/.config/Oxidm` on Linux).
 
+### 7. Chrome & Firefox Integration via Local REST API
+Oxidm features a local, asynchronous HTTP REST API listening on `http://127.0.0.1:19532`:
+- **Zero Brittle Native Messaging**: Avoids complex registry manifests and Native Messaging host headaches.
+- **Universal Browser Support**: Works identically across Google Chrome, Mozilla Firefox, Microsoft Edge, Brave, Opera, and Vivaldi.
+- **Auto-Interception**: Automatically catches browser downloads and redirects them to Oxidm.
+- **Context Menus**: Right-click links, media, or web pages to send them instantly to Oxidm.
+
 ---
 
 ## 📂 Project Structure
@@ -53,12 +61,20 @@ oxidm/
 ├── Cargo.toml               # Project manifest & pure Rust dependencies
 ├── README.md                # Documentation & usage guide
 ├── assets/                  # Icons and visual assets
+├── crates/
+│   └── installer/           # Pure Rust native Windows installer (install_oxidm.exe)
+├── extension/               # Chrome & Firefox Manifest V3 Extension
+│   ├── manifest.json        # Universal MV3 browser manifest
+│   ├── background.js        # Download interceptor & context menus
+│   ├── popup/               # Modern dark popup UI (HTML/CSS/JS)
+│   └── icons/               # High-res extension icons
 ├── installer/
-│   ├── build_release.sh     # Release packaging script (Portable ZIP + Executable)
-│   └── inno_setup.iss       # Inno Setup 1-click Windows installer script
+│   ├── build_release.sh     # Release packaging script (Portable + Installer + Extension)
+│   └── inno_setup.iss       # Inno Setup script fallback
 └── src/
     ├── main.rs              # Application entry point & window bootstrapping
     ├── app.rs               # Main GUI state (eframe / egui) & event loop
+    ├── api.rs               # Local HTTP API (127.0.0.1:19532) for browser integration
     ├── engine/              # Multi-part download engine
     │   ├── client.rs        # HTTP client, user-agent, headers & URL probe
     │   ├── downloader.rs    # Concurrent chunk workers & stream writing
@@ -110,6 +126,24 @@ This produces:
 - **`dist/install_oxidm.exe`**: Standalone native Windows installer wizard (extracts payload, generates Desktop & Start Menu `.lnk` shortcuts, registers in Windows Apps & Features, and provisions `uninstall.exe`).
 - **`dist/Oxidm-v0.1.0-Windows-x64-Portable.zip`**: Portable distribution with `portable.txt` enabled (stores data strictly in `./data`).
 - **`dist/portable/oxidm.exe`**: Direct standalone portable binary.
+- **`dist/oxidm-browser-extension.zip`**: Chrome & Firefox Manifest V3 browser integration package.
+
+---
+
+## 🌐 Browser Extension Setup (Chrome & Firefox)
+
+The Oxidm browser extension connects directly to your running desktop application via `http://127.0.0.1:19532`.
+
+### Google Chrome / Microsoft Edge / Brave
+1. Go to `chrome://extensions` (or `edge://extensions`).
+2. Toggle on **Developer mode** in the upper-right corner.
+3. Click **Load unpacked** and select the `extension/` directory (or extract `oxidm-browser-extension.zip`).
+4. Pin the Oxidm extension icon to your toolbar.
+
+### Mozilla Firefox
+1. Navigate to `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on...**.
+3. Select `manifest.json` from the `extension/` folder.
 
 ---
 

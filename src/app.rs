@@ -45,6 +45,13 @@ impl OxidmApp {
         );
         let settings_dialog = SettingsDialogState::new(settings.clone());
 
+        // Start local HTTP API server for browser extension integration (Chrome / Firefox / Edge)
+        let api_server = std::sync::Arc::new(crate::api::ApiServer::new(
+            queue.clone(),
+            crate::api::DEFAULT_API_PORT,
+        ));
+        api_server.start();
+
         Self {
             queue,
             clipboard_monitor: ClipboardMonitor::new(),

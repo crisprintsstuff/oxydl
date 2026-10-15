@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Oxidm Integration Module",
+  "version": "1.0.0",
+  "description": "Turbocharge browser downloads with Oxidm - Open Source, High Speed Multi-Connection Download Manager.",
+  "permissions": [
+    "contextMenus",
+    "downloads",
+    "storage",
+    "notifications",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:19532/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_title": "Oxidm Download Manager",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "oxidm-integration@oxidm.org",
+      "strict_min_version": "109.0"
+    }
+  }
+}

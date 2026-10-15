@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oxidm Download Manager</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-area">
+        <span class="icon">🦀</span>
+        <div>
+          <h1 class="title">Oxidm</h1>
+          <span class="subtitle">High Speed Download Manager</span>
+        </div>
+      </div>
+      <div id="status-badge" class="badge badge-disconnected">Checking...</div>
+    </header>
+
+    <!-- App Status Card -->
+    <div id="status-card" class="card">
+      <div class="card-row">
+        <span class="label">Desktop App:</span>
+        <span id="app-status-text" class="value">Connecting...</span>
+      </div>
+      <div id="active-downloads-row" class="card-row" style="display: none;">
+        <span class="label">Active Downloads:</span>
+        <span id="active-downloads-count" class="value highlight">0</span>
+      </div>
+    </div>
+
+    <!-- Interception Toggle -->
+    <div class="card settings-card">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-title">Intercept Downloads</div>
+          <div class="toggle-desc">Automatically send browser downloads to Oxidm</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="intercept-toggle">
+          <span class="slider round"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Quick Add Form -->
+    <div class="card add-card">
+      <label class="input-label" for="url-input">Quick Download URL:</label>
+      <div class="input-row">
+        <input type="text" id="url-input" placeholder="https://example.com/file.zip" />
+        <button id="send-btn" class="btn btn-primary">Download</button>
+      </div>
+      <div id="feedback-msg" class="feedback"></div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-row">
+      <button id="current-tab-btn" class="btn btn-secondary">
+        🌐 Download Current Page Link
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Pure Rust • Zero Bloat</span>
+      <span class="version">v1.0.0</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
