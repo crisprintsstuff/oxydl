@@ -1,0 +1,15 @@
+# Build artifacts
+/target
+/dist
+
+# Runtime & Local data
+data/
+*.oxidm.meta
+tasks.json
+settings.json
+*.log
+
+# Temporary test / compiler files
+*.rcgu.o
+*.tmp
+*.bak
