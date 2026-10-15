@@ -18,6 +18,7 @@ pub enum TableAction {
     OpenFile(PathBuf),
     OpenFolder(PathBuf),
     CopyLink(String),
+    ConvertMedia(PathBuf),
 }
 
 pub fn render_table(
@@ -92,6 +93,10 @@ pub fn render_table(
                             if task.status == TaskStatus::Completed {
                                 if ui.button("📂 Open File").clicked() {
                                     action = TableAction::OpenFile(task.save_path.clone());
+                                    ui.close_menu();
+                                }
+                                if ui.button("🎬 Convert / Extract Audio...").clicked() {
+                                    action = TableAction::ConvertMedia(task.save_path.clone());
                                     ui.close_menu();
                                 }
                             }

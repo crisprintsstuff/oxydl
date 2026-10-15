@@ -9,7 +9,7 @@ use crate::util::file::{get_app_data_dir, get_default_download_dir};
 fn default_true() -> bool { true }
 fn default_false() -> bool { false }
 fn default_user_agent() -> String {
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) OxyDL/0.1.0".to_string()
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) OxyDL/0.5.0".to_string()
 }
 fn default_timeout() -> u64 { 30 }
 fn default_torrent_port() -> u16 { 6881 }
@@ -64,6 +64,14 @@ pub struct AppSettings {
     pub api_port: u16,
     #[serde(default = "default_true")]
     pub enable_mcp_server: bool,
+
+    // Scheduler
+    #[serde(default)]
+    pub scheduler: crate::manager::scheduler::SchedulerConfig,
+
+    // Media Converter
+    #[serde(default)]
+    pub ffmpeg_path: Option<PathBuf>,
 }
 
 impl Default for AppSettings {
@@ -89,6 +97,8 @@ impl Default for AppSettings {
             enable_api_server: true,
             api_port: 19532,
             enable_mcp_server: true,
+            scheduler: crate::manager::scheduler::SchedulerConfig::default(),
+            ffmpeg_path: None,
         }
     }
 }

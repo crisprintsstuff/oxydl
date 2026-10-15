@@ -10,10 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Scheduled download queues with start/stop calendar timers.
-- Speed scheduler for bandwidth-limiting during peak hours.
-- Direct video streaming parser for YouTube and Vimeo video streams.
-- Audio and video media converter (FFmpeg integration).
+- Cloud backup and sync for download queue states.
+- Browser-side torrent magnet drag-and-drop handler.
+
+---
+
+## [0.5.0] - 2026-10-15
+
+### Added
+- **Automated Queue Calendar Timers**:
+  - Background scheduler engine (`src/manager/scheduler.rs`) executing automated queue lifecycle evaluations.
+  - Configurable 24-hour start and stop timers (`HH:MM`) with active day-of-week selection (`Mon`..`Sun`).
+  - Optional one-shot calendar date targeting (`YYYY-MM-DD`).
+  - Automated post-download actions upon queue completion: `PauseQueue`, `SleepComputer` (`rundll32.exe powrprof.dll` / `systemctl suspend`), and `ShutdownComputer`.
+
+- **Peak-Hours Bandwidth Limiter (Speed Scheduler)**:
+  - Dynamically throttles download speeds during defined business or peak usage hours (e.g., 09:00 to 18:00).
+  - Configurable peak speed limits (KB/s) and off-peak speeds (unlimited or custom limit).
+  - Time window support spanning midnight (e.g., 22:00 to 06:00).
+  - Integrated into top toolbar via dedicated `⏰ Scheduler` status button and modal dialog (`src/ui/scheduler_dialog.rs`).
+
+- **Direct Video Streaming Parser (YouTube & Vimeo)**:
+  - Native video stream extractor (`src/engine/video.rs`) resolving direct CDN URLs without external dependencies.
+  - **YouTube Parser**: Queries YouTube's InnerTube Android client API (`/youtubei/v1/player`) to retrieve unencrypted progressive formats (720p, 360p) and adaptive streams (1080p, 1440p, 4K, audio-only M4A/WebM) with metadata and thumbnails.
+  - **Vimeo Parser**: Queries Vimeo player config API (`player.vimeo.com/video/{id}/config`) to retrieve direct progressive MP4 CDN URLs (1080p, 720p, 540p, 360p) and adaptive HLS master playlists.
+  - Embedded stream selection chips in the "Add New Download" dialog with instantaneous quality selection.
+
+- **Audio & Video Media Converter (FFmpeg Integration)**:
+  - Built-in media transcoding and audio extraction suite (`src/engine/converter.rs` & `src/ui/converter_dialog.rs`).
+  - Automatic multi-path discovery of `ffmpeg` binaries (custom user path, application directory, `./bin/`, PATH environment variable, Windows `%LOCALAPPDATA%` and `%ProgramFiles%`).
+  - Supported output formats:
+    - Audio: `MP3 (320 kbps & 192 kbps)`, `AAC (.m4a)`, `FLAC (Lossless)`, `WAV (PCM)`, and `Direct Stream Copy`.
+    - Video: `MP4 (H.264 + AAC)`, `MKV (Fast Remux)`, and `WebM (VP9 + Opus)`.
+  - Asynchronous background execution with real-time stderr parsing for live progress percentage, transcoding speed multiplier, and cancellation.
+  - 1-click conversion accessible from the downloads list context menu (`🎬 Convert / Extract Audio...`) and main toolbar.
 
 ---
 
@@ -69,5 +99,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/crisprintsstuff/oxydl/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/crisprintsstuff/oxydl/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/crisprintsstuff/oxydl/compare/v0.1.0...v0.5.0
 [0.1.0]: https://github.com/crisprintsstuff/oxydl/releases/tag/v0.1.0

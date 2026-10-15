@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "OxyDL Integration Module",
-  "version": "1.0.0",
+  "version": "0.5.0",
   "description": "Turbocharge browser downloads with OxyDL - Open Source, High Speed Multi-Connection Download Manager.",
   "permissions": [
     "contextMenus",

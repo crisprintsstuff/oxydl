@@ -14,6 +14,8 @@ pub enum ToolbarAction {
     ResumeAll,
     DeleteSelected,
     OpenSettings,
+    OpenScheduler,
+    OpenConverter,
     SetSpeedLimit(Option<u64>),
 }
 
@@ -112,10 +114,16 @@ pub fn render_toolbar(
                 }
             });
 
-        // Right side: Settings button
+        // Right side: Settings, Scheduler, Converter
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui.button("⚙ Settings").clicked() {
                 action = ToolbarAction::OpenSettings;
+            }
+            if ui.button("⏰ Scheduler").clicked() {
+                action = ToolbarAction::OpenScheduler;
+            }
+            if ui.button("🎬 Converter").clicked() {
+                action = ToolbarAction::OpenConverter;
             }
         });
     });

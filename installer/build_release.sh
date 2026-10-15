@@ -58,8 +58,9 @@ touch "$PORTABLE_DIR/portable.txt"
 
 # Create Portable ZIP archive
 cd "$PORTABLE_DIR"
-ZIP_NAME="OxyDL-v0.1.0-Windows-x64-Portable.zip"
-rm -f "$DIST_DIR/$ZIP_NAME"
+VERSION=$(grep '^version = ' "$DIR/Cargo.toml" | head -1 | cut -d '"' -f 2)
+ZIP_NAME="OxyDL-v${VERSION}-Windows-x64-Portable.zip"
+rm -f "$DIST_DIR"/OxyDL-v*-Windows-x64-Portable.zip
 zip -r "$DIST_DIR/$ZIP_NAME" ./* > /dev/null
 
 # Copy Installer to dist

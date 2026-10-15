@@ -196,3 +196,71 @@ async fn test_mcp_server_initialize_and_tools() {
     assert_eq!(res["isError"], false);
 }
 
+#[test]
+fn test_video_url_extraction() {
+    use oxydl::engine::video::VideoExtractor;
+
+    assert!(VideoExtractor::is_supported("https://www.youtube.com/watch?v=dQw4w9WgXcQ"));
+    assert!(VideoExtractor::is_supported("https://youtu.be/dQw4w9WgXcQ"));
+    assert!(VideoExtractor::is_supported("https://www.youtube.com/shorts/dQw4w9WgXcQ"));
+    assert!(VideoExtractor::is_supported("https://vimeo.com/76979871"));
+    assert!(!VideoExtractor::is_supported("https://example.com/file.zip"));
+
+    assert_eq!(
+        VideoExtractor::extract_youtube_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+        Some("dQw4w9WgXcQ".to_string())
+    );
+    assert_eq!(
+        VideoExtractor::extract_youtube_id("https://youtu.be/dQw4w9WgXcQ?t=42"),
+        Some("dQw4w9WgXcQ".to_string())
+    );
+    assert_eq!(
+        VideoExtractor::extract_vimeo_id("https://vimeo.com/76979871?param=1"),
+        Some("76979871".to_string())
+    );
+}
+
+#[test]
+fn test_scheduler_config_serde() {
+    use oxydl::manager::scheduler::{ScheduleAction, SchedulerConfig};
+
+    let mut cfg = SchedulerConfig::default();
+    cfg.queue_schedule.enabled = true;
+    cfg.queue_schedule.start_time = "03:00".to_string();
+    cfg.queue_schedule.action_on_complete = ScheduleAction::ShutdownComputer;
+    cfg.speed_schedule.enabled = true;
+    cfg.speed_schedule.peak_limit_kbps = 750;
+
+    let serialized = serde_json::to_string(&cfg).expect("Serialization failed");
+    let deserialized: SchedulerConfig = serde_json::from_str(&serialized).expect("Deserialization failed");
+
+    assert!(deserialized.queue_schedule.enabled);
+    assert_eq!(deserialized.queue_schedule.start_time, "03:00");
+    assert_eq!(deserialized.queue_schedule.action_on_complete, ScheduleAction::ShutdownComputer);
+    assert!(deserialized.speed_schedule.enabled);
+    assert_eq!(deserialized.speed_schedule.peak_limit_kbps, 750);
+}
+
+#[test]
+fn test_media_converter_args() {
+    use std::path::Path;
+    use oxydl::engine::converter::ConvertFormat;
+
+    let input = Path::new("video.ts");
+    let output_mp3 = Path::new("audio.mp3");
+    let output_mp4 = Path::new("video.mp4");
+
+    let mp3_args = ConvertFormat::Mp3_320k.build_args(input, output_mp3);
+    assert!(mp3_args.contains(&"-vn".to_string()));
+    assert!(mp3_args.contains(&"libmp3lame".to_string()));
+    assert!(mp3_args.contains(&"320k".to_string()));
+
+    let mp4_args = ConvertFormat::Mp4H264.build_args(input, output_mp4);
+    assert!(mp4_args.contains(&"libx264".to_string()));
+    assert!(mp4_args.contains(&"aac".to_string()));
+
+    let copy_args = ConvertFormat::AudioCopy.build_args(input, output_mp3);
+    assert!(copy_args.contains(&"copy".to_string()));
+}
+
+

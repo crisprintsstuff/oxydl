@@ -1,4 +1,5 @@
 pub mod client;
+pub mod converter;
 pub mod dash;
 pub mod downloader;
 pub mod ed2k;
@@ -7,3 +8,4 @@ pub mod hls;
 pub mod speed;
 pub mod state;
 pub mod torrent;
+pub mod video;

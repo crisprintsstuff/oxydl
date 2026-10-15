@@ -7,14 +7,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/crisprintsstuff/oxydl/releases"><img src="https://img.shields.io/badge/release-v0.1.0-blue?style=flat-square&logo=github" alt="Release" /></a>
+  <a href="https://github.com/crisprintsstuff/oxydl/releases"><img src="https://img.shields.io/badge/release-v0.5.0-blue?style=flat-square&logo=github" alt="Release" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/language-Rust%201.80%2B-orange?style=flat-square&logo=rust" alt="Rust" /></a>
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey?style=flat-square&logo=windows" alt="Platform" />
   <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%2FApache--2.0-green?style=flat-square" alt="License" /></a>
   <a href="extension/"><img src="https://img.shields.io/badge/extension-Chrome%20%7C%20Firefox-informational?style=flat-square&logo=googlechrome" alt="Browser Extension" /></a>
 </p>
 
-> **OxyDL** is a lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Engineered as a clean, bloat-free alternative to **Internet Download Manager (IDM)**, **Free Download Manager (FDM)**, **JDownloader**, and **XDM**. Features dynamic multi-segment HTTP Range acceleration, real-time segment stream visualization, zero disk churn sparse pre-allocation, portable mode, native Windows installer wizard, and universal Chrome/Firefox browser extension.
+> **OxyDL** is a lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Engineered as a clean, bloat-free alternative to **Internet Download Manager (IDM)**, **Free Download Manager (FDM)**, **JDownloader**, and **XDM**. Features dynamic multi-segment HTTP Range acceleration, real-time segment stream visualization, zero disk churn sparse pre-allocation, portable mode, native Windows installer wizard, universal Chrome/Firefox browser extension, scheduled queue timers, peak-hours speed limiter, YouTube & Vimeo video parser, and built-in FFmpeg media converter.
 
 ---
 
@@ -23,13 +23,18 @@
 | Feature | OxyDL | Bloated Proprietary Managers |
 | :--- | :---: | :---: |
 | **Open Source & Free Forever** | ✅ Yes (MIT / Apache-2.0) | ❌ Paid / Adware / Trial Popups |
-| **Pure Rust Native App** | ✅ Single ~5.6 MB `.exe` | ❌ 150+ MB Electron / C++ Bloat |
+| **Pure Rust Native App** | ✅ Single ~6.2 MB `.exe` | ❌ 150+ MB Electron / C++ Bloat |
 | **Multi-Part HTTP Range Streams** | ✅ 1 to 32 concurrent parts | ✅ |
+| **Multi-Protocol Engine** | ✅ HTTP, FTP, Torrent, eD2K, HLS, DASH | ⚠️ Fragmented across plugins |
+| **AI Integration (MCP Server)** | ✅ Built-in Model Context Protocol | ❌ None |
+| **Automated Queue Calendar Timers** | ✅ Start/Stop times & Auto-Sleep/Shutdown | ⚠️ Complex / Paid |
+| **Speed Scheduler** | ✅ Peak vs. Off-Peak bandwidth limits | ⚠️ Limited |
+| **YouTube & Vimeo Video Parser** | ✅ Direct unencrypted CDN streams | ⚠️ Breakable / Paid add-on |
+| **Media Converter & Audio Extractor** | ✅ FFmpeg integration (MP3, AAC, FLAC, MP4) | ❌ None or third-party bloat |
 | **IDM-Style Segment Visualizer** | ✅ Real-time color-coded chunk bars | ✅ |
 | **Instant Pause & Resume** | ✅ Byte-level `.oxydl.meta` tracking | ✅ |
-| **Speed Limiter** | ✅ Configurable per-task / global throttling | ✅ |
 | **Browser Extension** | ✅ Chrome, Edge, Firefox, Brave (Zero-bloat) | ⚠️ Proprietary / Adware / Popups |
-| **Clipboard Link Sniffer** | ✅ Auto-detects copied `http`/`https` URLs | ✅ |
+| **Clipboard Link Sniffer** | ✅ Auto-detects copied URLs & video links | ✅ |
 | **Portable Mode** | ✅ Runs from USB / any folder (`./data`) | ⚠️ Requires registry / AppData |
 | **Zero Runtime Dependencies** | ✅ Self-contained, Pure Rustls TLS | ❌ OpenSSL / VC++ Runtimes required |
 

@@ -6,8 +6,9 @@ use egui::{Color32, RichText, Window};
 use crate::engine::client::{create_http_client, probe_url, ProbeResult};
 use crate::engine::ed2k::Ed2kLink;
 use crate::engine::torrent::MagnetInfo;
+use crate::engine::video::{VideoExtractor, VideoInfo};
 use crate::manager::task::DownloadProtocol;
-use crate::util::file::{extract_filename_from_url, TaskCategory};
+use crate::util::file::{extract_filename_from_url, sanitize_filename, TaskCategory};
 use crate::util::format::format_bytes;
 
 pub struct AddDialogState {
@@ -21,6 +22,9 @@ pub struct AddDialogState {
     pub probe_result: Option<ProbeResult>,
     pub error_msg: Option<String>,
     pub probe_pending: Option<tokio::sync::oneshot::Receiver<Result<ProbeResult, String>>>,
+    pub video_info: Option<VideoInfo>,
+    pub is_extracting_video: bool,
+    pub video_pending: Option<tokio::sync::oneshot::Receiver<Result<VideoInfo, String>>>,
 }
 
 impl AddDialogState {
@@ -36,6 +40,9 @@ impl AddDialogState {
             probe_result: None,
             error_msg: None,
             probe_pending: None,
+            video_info: None,
+            is_extracting_video: false,
+            video_pending: None,
         }
     }
 
@@ -47,6 +54,9 @@ impl AddDialogState {
         self.error_msg = None;
         self.probe_pending = None;
         self.is_probing = false;
+        self.video_info = None;
+        self.is_extracting_video = false;
+        self.video_pending = None;
         self.is_open = true;
     }
 }
@@ -94,6 +104,25 @@ pub fn render_add_dialog(
             }
             state.is_probing = false;
             state.probe_pending = None;
+        }
+    }
+
+    // Check if background video extraction completed
+    if let Some(ref mut rx) = state.video_pending {
+        if let Ok(res) = rx.try_recv() {
+            state.is_extracting_video = false;
+            state.video_pending = None;
+            match res {
+                Ok(v_info) => {
+                    state.file_name = format!("{}.mp4", sanitize_filename(&v_info.title));
+                    state.category = TaskCategory::Videos;
+                    state.error_msg = None;
+                    state.video_info = Some(v_info);
+                }
+                Err(err) => {
+                    state.error_msg = Some(err);
+                }
+            }
         }
     }
 
@@ -239,6 +268,59 @@ pub fn render_add_dialog(
                     }
                 }
             });
+
+            // Video Stream Extraction for YouTube and Vimeo
+            let is_video_stream = VideoExtractor::is_supported(&state.url);
+            if is_video_stream {
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    let extract_label = if state.is_extracting_video {
+                        "⏳ Fetching Video Streams..."
+                    } else {
+                        "🎬 Fetch Video Streams (YouTube / Vimeo)"
+                    };
+
+                    if ui.button(extract_label).clicked() && !state.is_extracting_video {
+                        state.is_extracting_video = true;
+                        state.error_msg = None;
+                        let (tx, rx) = tokio::sync::oneshot::channel();
+                        state.video_pending = Some(rx);
+                        let url_clone = state.url.clone();
+                        let ctx_clone = ctx.clone();
+                        tokio::spawn(async move {
+                            let res = VideoExtractor::extract(&url_clone).await.map_err(|e| e.to_string());
+                            let _ = tx.send(res);
+                            ctx_clone.request_repaint();
+                        });
+                    }
+                });
+            }
+
+            if let Some(ref v_info) = state.video_info {
+                ui.add_space(4.0);
+                ui.group(|ui| {
+                    ui.label(RichText::new(format!("{} {}", v_info.provider.icon(), v_info.title)).strong().color(Color32::from_rgb(52, 152, 219)));
+                    ui.label(format!("Creator: {} • Duration: {}m", v_info.author, v_info.duration_secs.unwrap_or(0) / 60));
+                    ui.add_space(4.0);
+                    ui.label(RichText::new("Select Stream Quality:").strong());
+                    ui.horizontal_wrapped(|ui| {
+                        for stream in &v_info.streams {
+                            if ui.button(&stream.quality_label).clicked() {
+                                state.url = stream.direct_url.clone();
+                                state.file_name = format!("{}.{}", sanitize_filename(&v_info.title), stream.extension);
+                                state.category = if stream.is_audio_only { TaskCategory::Music } else { TaskCategory::Videos };
+                                state.probe_result = Some(ProbeResult {
+                                    url: stream.direct_url.clone(),
+                                    suggested_filename: state.file_name.clone(),
+                                    total_bytes: stream.file_size,
+                                    supports_ranges: true,
+                                    content_type: Some(if stream.is_audio_only { "audio/mp4".to_string() } else { "video/mp4".to_string() }),
+                                });
+                            }
+                        }
+                    });
+                });
+            }
 
             if let Some(ref err) = state.error_msg {
                 ui.label(RichText::new(err).color(Color32::from_rgb(231, 76, 60)));

@@ -1,12 +1,14 @@
-//! Main eframe application managing UI layout, state synchronization, and event dispatching.
-
+use std::sync::Arc;
 use std::time::Duration;
 use egui::{Color32, RichText, TopBottomPanel, CentralPanel, SidePanel};
 use uuid::Uuid;
 
 use crate::manager::queue::QueueManager;
+use crate::manager::scheduler::SchedulerService;
 use crate::manager::task::{DownloadTask, TaskStatus};
 use crate::ui::add_dialog::{render_add_dialog, AddDialogResult, AddDialogState};
+use crate::ui::converter_dialog::{render_converter_dialog, ConverterDialogState};
+use crate::ui::scheduler_dialog::{render_scheduler_dialog, SchedulerDialogResult, SchedulerDialogState};
 use crate::ui::segment_bar::render_segment_visualizer;
 use crate::ui::settings_dialog::{render_settings_dialog, SettingsDialogResult, SettingsDialogState};
 use crate::ui::sidebar::{render_sidebar, FilterSelection};
@@ -22,6 +24,9 @@ pub struct OxyDLApp {
     current_filter: FilterSelection,
     add_dialog: AddDialogState,
     settings_dialog: SettingsDialogState,
+    scheduler_dialog: SchedulerDialogState,
+    converter_dialog: ConverterDialogState,
+    scheduler_service: Arc<SchedulerService>,
     clipboard_prompt_url: Option<String>,
     cached_tasks: Vec<DownloadTask>,
     current_speed_limit_kbps: Option<u64>,
@@ -44,6 +49,12 @@ impl OxyDLApp {
             settings.default_connections,
         );
         let settings_dialog = SettingsDialogState::new(settings.clone());
+        let scheduler_dialog = SchedulerDialogState::new(settings.scheduler.clone());
+        let converter_dialog = ConverterDialogState::new(settings.ffmpeg_path.as_deref());
+
+        // Start scheduler background engine
+        let scheduler_service = Arc::new(SchedulerService::new(queue.clone(), settings.scheduler.clone()));
+        scheduler_service.clone().start();
 
         // Start local HTTP API server for browser extension integration (Chrome / Firefox / Edge)
         let api_server = std::sync::Arc::new(crate::api::ApiServer::new(
@@ -59,6 +70,9 @@ impl OxyDLApp {
             current_filter: FilterSelection::All,
             add_dialog,
             settings_dialog,
+            scheduler_dialog,
+            converter_dialog,
+            scheduler_service,
             clipboard_prompt_url: None,
             cached_tasks: Vec::new(),
             current_speed_limit_kbps: settings.speed_limit_kbps,
@@ -193,6 +207,23 @@ impl eframe::App for OxyDLApp {
                     if let Ok(settings) = self.queue.settings.try_lock() {
                         self.settings_dialog.open(settings.clone());
                     }
+                }
+                ToolbarAction::OpenScheduler => {
+                    let cfg_opt = {
+                        let arc = self.scheduler_service.get_config();
+                        arc.try_lock().map(|g| g.clone()).ok()
+                    };
+                    if let Some(cfg) = cfg_opt {
+                        self.scheduler_dialog.open(cfg);
+                    }
+                }
+                ToolbarAction::OpenConverter => {
+                    let ffmpeg_path = if let Ok(s) = self.queue.settings.try_lock() {
+                        s.ffmpeg_path.clone()
+                    } else {
+                        None
+                    };
+                    self.converter_dialog.open(ffmpeg_path.as_deref());
                 }
                 ToolbarAction::SetSpeedLimit(limit) => {
                     self.current_speed_limit_kbps = limit;
@@ -331,6 +362,14 @@ impl eframe::App for OxyDLApp {
                         let _ = cb.set_text(url);
                     }
                 }
+                TableAction::ConvertMedia(path) => {
+                    let ffmpeg_path = if let Ok(s) = self.queue.settings.try_lock() {
+                        s.ffmpeg_path.clone()
+                    } else {
+                        None
+                    };
+                    self.converter_dialog.open_with_file(path, ffmpeg_path.as_deref());
+                }
             }
         });
 
@@ -369,6 +408,23 @@ impl eframe::App for OxyDLApp {
                 q.update_settings(new_settings).await;
             });
         }
+
+        let scheduler_res = render_scheduler_dialog(ctx, &mut self.scheduler_dialog);
+        if let SchedulerDialogResult::Save(new_cfg) = scheduler_res {
+            let s_service = self.scheduler_service.clone();
+            let q = self.queue.clone();
+            let cfg_clone = new_cfg.clone();
+            tokio::spawn(async move {
+                s_service.update_config(cfg_clone.clone()).await;
+                let mut s = q.settings.lock().await;
+                s.scheduler = cfg_clone;
+                let s_clone = s.clone();
+                drop(s);
+                q.update_settings(s_clone).await;
+            });
+        }
+
+        render_converter_dialog(ctx, &mut self.converter_dialog);
 
         // Schedule repaint: fast if downloading, idle otherwise
         if has_active_downloads {
