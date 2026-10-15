@@ -53,6 +53,7 @@ mkdir -p "$PORTABLE_DIR"
 # Copy Portable files
 cp "$MAIN_EXE" "$PORTABLE_DIR/oxydl.exe"
 cp "$DIR/README.md" "$PORTABLE_DIR/README.md"
+cp "$DIR/CHANGELOG.md" "$PORTABLE_DIR/CHANGELOG.md"
 touch "$PORTABLE_DIR/portable.txt"
 
 # Create Portable ZIP archive
