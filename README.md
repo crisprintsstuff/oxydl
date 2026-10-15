@@ -2,7 +2,7 @@
   <img src="assets/banner.png" alt="OxyDL - High Speed Download Manager" width="100%" />
 </p>
 
-# Open-Source Download Manager 🦀🚀
+# OxyDL 🦀🚀
 
 > A lightweight, open-source, high-speed multi-connection download manager written in **100% Pure Rust**. Designed as a clean, bloat-free, portable alternative to Internet Download Manager (IDM).
 
